@@ -1,0 +1,17 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "jsx": "react",
+    "strict": true,
+    "baseUrl": ".",
+    // "moduleResolution": "node",
+    "esModuleInterop": true,
+    // "allowSyntheticDefaultImports": true,
+    // "skipLibCheck": true,
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["**/*.ts", "**/*.tsx", "index.js", "shared/**/*"],
+  "exclude": ["node_modules"]
+}

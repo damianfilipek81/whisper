@@ -2,6 +2,29 @@
   "expo": {
     "name": "whisper",
     "slug": "whisper",
-    "version": "1.0.0"
+    "version": "1.0.0",
+    "android": {
+      "package": "com.dmfilipek.whisper",
+      "permissions": ["android.permission.CAMERA", "android.permission.RECORD_AUDIO"],
+      "minSdkVersion": 29
+    },
+    "ios": {
+      "bundleIdentifier": "com.dmfilipek.whisper",
+      "appleTeamId": "H93M93P239",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "This app requires microphone access in order to transcribe speech",
+        "NSCameraUsageDescription": "This app requires camera access to scan QR codes for connecting to peers"
+      }
+    },
+    "plugins": [
+      "expo-audio",
+      "react-native-audio-api",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "This app requires camera access to scan QR codes for connecting to peers"
+        }
+      ]
+    ]
   }
 }
