@@ -1,7 +1,8 @@
 import RPC from 'bare-rpc';
+import type { IncomingRequest as RPCIncomingRequest } from 'bare-rpc';
 import b4a from 'b4a';
 import crypto from 'hypercore-crypto';
-import { log } from './logger.mjs';
+import { log } from './logger.js';
 
 import {
   RPC_INIT,
@@ -17,39 +18,41 @@ import {
   RPC_DESTROY,
   RPC_GET_PEER_STATUS,
   RPC_GET_KNOWN_PEERS,
-} from './constants.mjs';
+} from '../shared/constants.js';
 
-import { 
-  persistedState, 
+import {
+  persistedState,
   memoryState,
-  clearAllState, 
+  clearAllState,
   clearMemoryState,
-  getAllChats, 
-  getOrCreateChat 
-} from './state.mjs';
+  getAllChats,
+  getOrCreateChat,
+} from './state.js';
 import {
   initializeStorage,
   closeStorage,
   loadMetadata,
   saveMetadata,
-} from './storage.mjs';
-import { initSwarm, joinChat, joinInvite } from './swarm.mjs';
-import { getPeerStatus, deriveChatIdForPeer } from './peers.mjs';
-import { sendChatMessage, getChatMessages } from './chat.mjs';
-import { emitError, emitPeerConnecting } from './events.mjs';
-import { encodeShareCode, decodeShareCode } from './qr.mjs';
+} from './storage.js';
+import { initSwarm, joinChat, joinInvite } from './swarm.js';
+import { getPeerStatus, deriveChatIdForPeer } from './peers.js';
+import { sendChatMessage, getChatMessages } from './chat.js';
+import { emitError, emitPeerConnecting } from './events.js';
+import { encodeShareCode, decodeShareCode } from './qr.js';
+import type { RPCRequestData, RPCResponse } from './types.js';
 
+// @ts-ignore - BareKit is a global
 const { IPC } = BareKit;
 
-const rpc = new RPC(IPC, async (req) => {
+const rpc = new RPC(IPC, async (req: RPCIncomingRequest) => {
   try {
     const dataStr = req.data
       ? Buffer.isBuffer(req.data)
         ? req.data.toString('utf8')
         : String(req.data)
       : '{}';
-    const data = JSON.parse(dataStr);
-    let res;
+    const data: RPCRequestData = JSON.parse(dataStr);
+    let res: RPCResponse;
     switch (req.command) {
       case RPC_INIT:
         res = await onInit(data);
@@ -93,16 +96,18 @@ const rpc = new RPC(IPC, async (req) => {
       default:
         res = { success: false, error: 'Unknown command' };
     }
-    req.reply(Buffer.from(JSON.stringify(res)));
+    req.reply(Buffer.from(JSON.stringify(res)) as any);
   } catch (e) {
-    emitError(e, 'rpc');
-    req.reply(Buffer.from(JSON.stringify({ success: false, error: String(e) })));
+    emitError(e as Error, 'rpc');
+    req.reply(
+      Buffer.from(JSON.stringify({ success: false, error: String(e) })) as any
+    );
   }
 });
 
 memoryState.rpc = rpc;
 
-async function onInit(data) {
+async function onInit(data: RPCRequestData): Promise<RPCResponse> {
   try {
     // Prevent double initialization
     if (memoryState.initialized) {
@@ -110,7 +115,7 @@ async function onInit(data) {
         '[INIT] ⚠️ Already initialized, returning existing userId:',
         persistedState.userId?.slice(0, 16)
       );
-      return { success: true, userId: persistedState.userId };
+      return { success: true, userId: persistedState.userId || undefined };
     }
 
     log.i('[INIT] 🚀 Starting fresh initialization...');
@@ -119,7 +124,7 @@ async function onInit(data) {
     await initializeStorage(storagePath);
 
     // Generate/load keypair (simple deterministic store)
-    const pkCore = memoryState.corestore.get({ name: 'keypair' });
+    const pkCore = memoryState.corestore!.get({ name: 'keypair' });
     await pkCore.ready();
     let pub = await pkCore.getUserData('pub');
     let sec = await pkCore.getUserData('sec');
@@ -148,12 +153,14 @@ async function onInit(data) {
         log.i(
           '[INIT-BG] Starting DHT lookup and hole punching for existing chats...'
         );
-        
+
         // Join both invite topics (for discovery) AND chat topics (for communication)
         const joinPromises = chatsList.map(async (chat) => {
           try {
             // Join peer's invite topic first (primary discovery path)
-            log.i(`[INIT-BG] Joining invite topic for peer ${chat.peerId.slice(0, 8)}...`);
+            log.i(
+              `[INIT-BG] Joining invite topic for peer ${chat.peerId.slice(0, 8)}...`
+            );
             await Promise.race([
               joinInvite(chat.peerId),
               new Promise((_, reject) =>
@@ -171,11 +178,13 @@ async function onInit(data) {
               ),
             ]);
             log.i(`[INIT-BG] ✓ Joined chat ${chat.id.slice(0, 16)}`);
-          } catch (e) {
-            log.w(`[INIT-BG] ✗ Failed to join chat ${chat.id.slice(0, 16)}: ${e.message}`);
+          } catch (e: any) {
+            log.w(
+              `[INIT-BG] ✗ Failed to join chat ${chat.id.slice(0, 16)}: ${e.message}`
+            );
           }
         });
-        
+
         Promise.allSettled(joinPromises).then(() => {
           log.i('[INIT-BG] Background joins completed');
         });
@@ -183,7 +192,10 @@ async function onInit(data) {
     }
 
     memoryState.initialized = true;
-    log.i('[INIT] ✅ Initialization complete! userId:', persistedState.userId?.slice(0, 16));
+    log.i(
+      '[INIT] ✅ Initialization complete! userId:',
+      persistedState.userId?.slice(0, 16)
+    );
     return { success: true, userId: persistedState.userId };
   } catch (e) {
     log.e('[INIT] ❌ Critical initialization error:', e);
@@ -192,17 +204,21 @@ async function onInit(data) {
   }
 }
 
-async function onSetProfile(data) {
+async function onSetProfile(data: RPCRequestData): Promise<RPCResponse> {
   persistedState.profile = { ...persistedState.profile, ...data };
   await saveMetadata();
   return { success: true, profile: persistedState.profile };
 }
 
-async function onGetProfile() {
-  return { success: true, profile: persistedState.profile, userId: persistedState.userId };
+async function onGetProfile(data: RPCRequestData): Promise<RPCResponse> {
+  return {
+    success: true,
+    profile: persistedState.profile,
+    userId: persistedState.userId || undefined,
+  };
 }
 
-async function onStartChatWithUser(data) {
+async function onStartChatWithUser(data: RPCRequestData): Promise<RPCResponse> {
   const { targetUserId } = data;
   if (!targetUserId) throw new Error('targetUserId required');
   const chatId = deriveChatIdForPeer(targetUserId);
@@ -214,13 +230,14 @@ async function onStartChatWithUser(data) {
   return { success: true, chatId };
 }
 
-async function onGetChatMessages(data) {
+async function onGetChatMessages(data: RPCRequestData): Promise<RPCResponse> {
   const { chatId, limit } = data;
+  if (!chatId) throw new Error('chatId required');
   const messages = await getChatMessages(chatId, limit ?? 50);
   return { success: true, messages };
 }
 
-async function onSendMessage(data) {
+async function onSendMessage(data: RPCRequestData): Promise<RPCResponse> {
   const { chatId, text, type, ...metadata } = data;
   if (!chatId) throw new Error('chatId required');
   const r = await sendChatMessage(chatId, text || '', type || 'text', metadata);
@@ -228,7 +245,7 @@ async function onSendMessage(data) {
   return { success: true, messageId: r.messageId };
 }
 
-async function onConnectByShareCode(data) {
+async function onConnectByShareCode(data: RPCRequestData): Promise<RPCResponse> {
   const { shareCode } = data;
   if (!shareCode) throw new Error('shareCode required');
   const targetPubKey = decodeShareCode(shareCode);
@@ -243,22 +260,24 @@ async function onConnectByShareCode(data) {
   return { success: true, chatId, connectedTo: peerId };
 }
 
-async function onGetActiveChats() {
+async function onGetActiveChats(): Promise<RPCResponse> {
   const chats = getAllChats();
   return { success: true, chats };
 }
 
-async function onGeneratePublicInvite() {
+async function onGeneratePublicInvite(): Promise<RPCResponse> {
+  if (!persistedState.userKeyPair) throw new Error('User keypair not initialized');
   const shareCode = encodeShareCode(persistedState.userKeyPair.publicKey);
   return { success: true, shareCode };
 }
 
-async function onGetPeerStatus(data) {
+async function onGetPeerStatus(data: RPCRequestData): Promise<RPCResponse> {
   const { peerId } = data;
+  if (!peerId) throw new Error('peerId required');
   return { success: true, status: getPeerStatus(peerId) };
 }
 
-async function onGetKnownPeers() {
+async function onGetKnownPeers(): Promise<RPCResponse> {
   const peers = Array.from(persistedState.peers.values()).map((p) => ({
     userId: p.peerId,
     profile: p.profile || undefined,
@@ -267,7 +286,7 @@ async function onGetKnownPeers() {
   return { success: true, peers };
 }
 
-async function onResetAllData() {
+async function onResetAllData(): Promise<RPCResponse> {
   log.i('[RESET] Starting comprehensive data reset...');
   log.i('[RESET] Current state summary:');
   log.i(`  - Peers: ${persistedState.peers.size}`);
@@ -326,10 +345,12 @@ async function onResetAllData() {
 
     // 4. Delete storage directory and all files
     if (memoryState.storagePath) {
+      // @ts-ignore - bare-fs modules
       const fs = await import('bare-fs');
+      // @ts-ignore
       const path = await import('bare-path');
 
-      const deleteDir = (dirPath) => {
+      const deleteDir = (dirPath: string): void => {
         if (fs.existsSync(dirPath)) {
           const items = fs.readdirSync(dirPath);
           for (const item of items) {
@@ -365,7 +386,7 @@ async function onResetAllData() {
   }
 }
 
-async function onDestroy() {
+async function onDestroy(): Promise<RPCResponse> {
   try {
     log.i('[DESTROY] Starting graceful shutdown...');
 

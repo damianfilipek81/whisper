@@ -1,26 +1,36 @@
 /**
- * State management for backendv2
+ * State management for backend_typescript
  *
  * Split into two categories:
  * - persistedState: Data that survives app restart (saved to corestore)
  * - memoryState: Ephemeral runtime data (cleared on restart)
  */
 
+import type {
+  PersistedState,
+  MemoryState,
+  Chat,
+  Peer,
+  ChatWithStatus,
+  ChatWriter,
+  ActiveConnection,
+} from './types.js';
+
 /**
  * Persisted State - Saved to storage and restored on init
  */
-export const persistedState = {
-  userId: null, // User's public key (hex)
-  userKeyPair: null, // { publicKey, secretKey }
-  profile: {}, // { name, createdAt, ... }
-  peers: new Map(), // peerId -> { peerId, lastSeen, profile }
-  chats: new Map(), // chatId -> { id, peerId, messages: [] }
+export const persistedState: PersistedState = {
+  userId: null,
+  userKeyPair: null,
+  profile: {},
+  peers: new Map(),
+  chats: new Map(),
 };
 
 /**
  * Memory State - Runtime only, cleared on restart
  */
-export const memoryState = {
+export const memoryState: MemoryState = {
   // Infrastructure
   rpc: null,
   corestore: null,
@@ -32,18 +42,18 @@ export const memoryState = {
   storagePath: null,
 
   // Active DHT discoveries (need references for cleanup)
-  inviteDiscoveries: new Map(), // peerId -> Discovery object
-  chatDiscoveries: new Map(), // chatId -> Discovery object
+  inviteDiscoveries: new Map(),
+  chatDiscoveries: new Map(),
 
   // Active connections (ephemeral)
-  peerTransports: new Map(), // peerId -> TCP connection (for deduplication)
-  activeConnections: new Map(), // peerId -> { transport, chatWriter, connected: true }
+  peerTransports: new Map(),
+  activeConnections: new Map(),
 };
 
 /**
  * Clear all in-memory state (but keep persisted data)
  */
-export function clearMemoryState() {
+export function clearMemoryState(): void {
   memoryState.inviteDiscoveries.clear();
   memoryState.chatDiscoveries.clear();
   memoryState.peerTransports.clear();
@@ -53,7 +63,7 @@ export function clearMemoryState() {
 /**
  * Clear ALL state (both persisted and memory)
  */
-export function clearAllState() {
+export function clearAllState(): void {
   // Clear persisted
   persistedState.peers.clear();
   persistedState.chats.clear();
@@ -68,7 +78,7 @@ export function clearAllState() {
 /**
  * Get or create a chat
  */
-export function getOrCreateChat(chatId, peerId) {
+export function getOrCreateChat(chatId: string, peerId: string): Chat {
   let chat = persistedState.chats.get(chatId);
   if (!chat) {
     chat = {
@@ -84,7 +94,7 @@ export function getOrCreateChat(chatId, peerId) {
 /**
  * Get or create a peer (persisted metadata only)
  */
-export function getOrCreatePeer(peerId) {
+export function getOrCreatePeer(peerId: string): Peer {
   let peer = persistedState.peers.get(peerId);
   if (!peer) {
     peer = {
@@ -99,7 +109,7 @@ export function getOrCreatePeer(peerId) {
 /**
  * Get all chats (with connected status from memory)
  */
-export function getAllChats() {
+export function getAllChats(): ChatWithStatus[] {
   return Array.from(persistedState.chats.values()).map((chat) => ({
     ...chat,
     connected: memoryState.activeConnections.has(chat.peerId),
@@ -109,7 +119,11 @@ export function getAllChats() {
 /**
  * Register an active connection (memory only)
  */
-export function registerActiveConnection(peerId, chatWriter, transport) {
+export function registerActiveConnection(
+  peerId: string,
+  chatWriter: ChatWriter,
+  transport: any
+): void {
   memoryState.activeConnections.set(peerId, {
     chatWriter,
     transport,
@@ -121,20 +135,20 @@ export function registerActiveConnection(peerId, chatWriter, transport) {
 /**
  * Unregister an active connection (memory only)
  */
-export function unregisterActiveConnection(peerId) {
+export function unregisterActiveConnection(peerId: string): void {
   memoryState.activeConnections.delete(peerId);
 }
 
 /**
  * Check if peer is connected (memory check)
  */
-export function isPeerConnected(peerId) {
+export function isPeerConnected(peerId: string): boolean {
   return memoryState.activeConnections.has(peerId);
 }
 
 /**
  * Get active connection for peer
  */
-export function getActiveConnection(peerId) {
+export function getActiveConnection(peerId: string): ActiveConnection | undefined {
   return memoryState.activeConnections.get(peerId);
 }

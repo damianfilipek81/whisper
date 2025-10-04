@@ -3,28 +3,30 @@ import crypto from 'hypercore-crypto';
 import b4a from 'b4a';
 import Protomux from 'protomux';
 import c from 'compact-encoding';
-import { log } from './logger.mjs';
-import { persistedState, memoryState, getOrCreatePeer } from './state.mjs';
-import { registerConnection, unregisterConnection } from './peers.mjs';
-import { handleIncomingChannelData } from './chat.mjs';
-import { saveMetadata } from './storage.mjs';
-import { emitPeerConnected } from './events.mjs';
+import { log } from './logger.js';
+import { persistedState, memoryState, getOrCreatePeer } from './state.js';
+import { registerConnection, unregisterConnection } from './peers.js';
+import { handleIncomingChannelData } from './chat.js';
+import { saveMetadata } from './storage.js';
+import { emitPeerConnected } from './events.js';
+import type { Handshake } from './types.js';
+import type { Discovery } from 'hyperswarm';
 
-export function topicFromChatId(chatId) {
+export function topicFromChatId(chatId: string): Buffer {
   // hash chatId into 32-byte topic
   const h = crypto.hash(b4a.from(chatId));
   return h.subarray(0, 32);
 }
 
-export function topicFromPeerId(peerIdHex) {
+export function topicFromPeerId(peerIdHex: string): Buffer {
   const h = crypto.hash(b4a.from(`invite:${peerIdHex}`));
   return h.subarray(0, 32);
 }
 
-export async function initSwarm() {
+export async function initSwarm(): Promise<Hyperswarm> {
   if (memoryState.swarm) return memoryState.swarm;
   memoryState.swarm = new Hyperswarm();
-  memoryState.swarm.on('connection', (conn, info) => {
+  memoryState.swarm.on('connection', (conn: any, info: any) => {
     const remotePublicKey = info?.publicKey || conn.remotePublicKey;
     const candidateId = remotePublicKey
       ? b4a.toString(remotePublicKey, 'hex')
@@ -46,7 +48,7 @@ export async function initSwarm() {
 
     const chatMessage = chat.addMessage({
       encoding: c.raw,
-      onmessage: (buf) => {
+      onmessage: (buf: Buffer) => {
         if (!conn._remoteUserId) return;
         log.i('[CHAT] message bytes len=', buf?.length, 'from', conn._remoteUserId);
         handleIncomingChannelData(conn._remoteUserId, buf);
@@ -57,7 +59,7 @@ export async function initSwarm() {
     const control = mux.createChannel({
       protocol: 'whisper/control/2',
       handshake: c.json,
-      onopen: async (remoteHandshake) => {
+      onopen: async (remoteHandshake: Handshake) => {
         try {
           log.i(
             '[CONTROL] Handshake complete with',
@@ -69,11 +71,14 @@ export async function initSwarm() {
           conn._remoteUserId = remoteHandshake.userId;
 
           // Deduplicate using deterministic tie-breaking on TRANSPORT stream
-          const existingTransport = memoryState.peerTransports.get(remoteHandshake.userId);
+          const existingTransport = memoryState.peerTransports.get(
+            remoteHandshake.userId
+          );
           if (existingTransport && existingTransport !== conn) {
             // Deterministic strategy: peer with LOWER userId keeps their OUTGOING connection
             // Peer with HIGHER userId accepts INCOMING connection
-            const shouldKeepNewConnection = persistedState.userId > remoteHandshake.userId;
+            const shouldKeepNewConnection =
+              persistedState.userId! > remoteHandshake.userId;
 
             if (shouldKeepNewConnection) {
               log.i(
@@ -133,7 +138,7 @@ export async function initSwarm() {
           );
 
           // Register connection with chat writer
-          const chatWriter = { write: (b) => chatMessage.send(b) };
+          const chatWriter = { write: (b: Buffer) => chatMessage.send(b) };
           const chatId = await registerConnection(remoteHandshake.userId, chatWriter);
 
           // Ensure current transport is tracked
@@ -158,7 +163,7 @@ export async function initSwarm() {
     // Open control channel WITH our handshake data
     log.i('[CONTROL] Opening control channel, sending handshake...');
     control.open({
-      userId: persistedState.userId,
+      userId: persistedState.userId!,
       profile: persistedState.profile,
     });
 
@@ -169,37 +174,43 @@ export async function initSwarm() {
   return memoryState.swarm;
 }
 
-export async function joinChat(chatId) {
+export async function joinChat(chatId: string): Promise<Discovery> {
   // Check if already joined - prevents duplicate joins and 500ms+ delays
   const existing = memoryState.chatDiscoveries.get(chatId);
   if (existing) {
-    log.i(`[SWARM] Already joined chat topic for ${chatId.slice(0, 16)}, skipping...`);
+    log.i(
+      `[SWARM] Already joined chat topic for ${chatId.slice(0, 16)}, skipping...`
+    );
     return existing;
   }
 
-  if (!memoryState.swarm) throw new Error('Swarm not initialized - call onInit() first');
+  if (!memoryState.swarm)
+    throw new Error('Swarm not initialized - call onInit() first');
   const topic = topicFromChatId(chatId);
   log.i(`[SWARM] Joining NEW chat topic for ${chatId.slice(0, 16)}...`);
   const discovery = memoryState.swarm.join(topic, { client: true, server: true });
-  
+
   // Store discovery BEFORE flushing to prevent race conditions
   memoryState.chatDiscoveries.set(chatId, discovery);
-  
+
   log.i(`[SWARM] Waiting for DHT announce/lookup to complete...`);
   await discovery.flushed();
   log.i(`[SWARM] Chat topic joined, listening for connections...`);
   return discovery;
 }
 
-export async function joinInvite(peerIdHex) {
+export async function joinInvite(peerIdHex: string): Promise<Discovery> {
   // Check if already joined
   const existing = memoryState.inviteDiscoveries.get(peerIdHex);
   if (existing) {
-    log.i(`[SWARM] Already joined invite topic for ${peerIdHex.slice(0, 8)}, skipping...`);
+    log.i(
+      `[SWARM] Already joined invite topic for ${peerIdHex.slice(0, 8)}, skipping...`
+    );
     return existing;
   }
 
-  if (!memoryState.swarm) throw new Error('Swarm not initialized - call onInit() first');
+  if (!memoryState.swarm)
+    throw new Error('Swarm not initialized - call onInit() first');
   const topic = topicFromPeerId(peerIdHex);
   log.i(`[SWARM] Joining invite topic for peer ${peerIdHex.slice(0, 8)}...`);
   const discovery = memoryState.swarm.join(topic, { client: true, server: true });

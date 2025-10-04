@@ -8,7 +8,8 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "bundle-backend": "npx bare-pack --target ios --target android --linked --out src/app.bundle.mjs backend/index.mjs",
-    "bundle-backendv2": "npx bare-pack --target ios --target android --linked --out src/appv2.bundle.mjs backendv2/index.mjs"
+    "bundle-backendv2": "npx bare-pack --target ios --target android --linked --out src/appv2.bundle.mjs backendv2/index.mjs",
+    "bundle-backend-ts": "npx esbuild backend/index.ts --bundle --platform=node --format=esm --outfile=backend/build/backend.mjs --external:bare-rpc --external:b4a --external:hypercore-crypto --external:corestore --external:hyperswarm --external:protomux --external:compact-encoding --external:bare-fs --external:bare-path && npx bare-pack --target ios --target android --linked --out backend/build/app.bundle.mjs backend/build/backend.mjs"
   },
   "dependencies": {
     "@react-native-picker/picker": "^2.11.2",
@@ -53,8 +54,9 @@
   "private": true,
   "devDependencies": {
     "@types/b4a": "^1.6.5",
-    "@types/node": "^24.5.2",
+    "@types/node": "^24.6.2",
     "@types/react": "~19.1.13",
+    "esbuild": "^0.25.10",
     "typescript": "~5.9.2"
   }
 }

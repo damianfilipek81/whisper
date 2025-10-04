@@ -1,30 +1,35 @@
-import { log } from './logger.mjs';
+import { log } from './logger.js';
+import { persistedState, getOrCreateChat, getActiveConnection } from './state.js';
+import { joinChat } from './swarm.js';
+import { deriveChatIdForPeer } from './peers.js';
+import { emitMessageReceived } from './events.js';
+import { saveMetadataDebounced } from './storage.js';
+import type { Message, IncomingMessage } from './types.js';
 
-import { persistedState, getOrCreateChat, getActiveConnection } from './state.mjs';
-import { joinChat } from './swarm.mjs';
-import { deriveChatIdForPeer } from './peers.mjs';
-import { emitMessageReceived } from './events.mjs';
-import { saveMetadataDebounced } from './storage.mjs';
-
-export async function ensureChat(peerIdHex) {
+export async function ensureChat(peerIdHex: string): Promise<any> {
   const chatId = deriveChatIdForPeer(peerIdHex);
   const chat = getOrCreateChat(chatId, peerIdHex);
   await joinChat(chatId);
   return chat;
 }
 
-export async function sendChatMessage(chatId, text, type = 'text', metadata = {}) {
+export async function sendChatMessage(
+  chatId: string,
+  text: string,
+  type: string = 'text',
+  metadata: Record<string, any> = {}
+): Promise<{ messageId: string }> {
   const chat = persistedState.chats.get(chatId);
   if (!chat) throw new Error('chat not found');
 
-  const message = {
+  const message: Message = {
     id: `${Date.now()}:${Math.random().toString(36).slice(2)}`,
     chatId,
-    senderId: persistedState.userId,
-    type,
+    senderId: persistedState.userId!,
+    type: type as 'text' | 'voice',
     text,
     timestamp: Date.now(),
-    status: 'pending', // pending | sent | delivered
+    status: 'pending',
     ...metadata, // Include voice message metadata (audioData, transcription, etc.)
   };
 
@@ -32,12 +37,14 @@ export async function sendChatMessage(chatId, text, type = 'text', metadata = {}
   chat.messages.push(message);
   try {
     await saveMetadataDebounced();
-  } catch {}
-  
+  } catch (error) {
+    log.w('[CHAT] Failed to save metadata:', error);
+  }
+
   // Emit event locally so sender UI updates immediately
   try {
     emitMessageReceived(message, chatId);
-  } catch {
+  } catch (error) {
     log.w('[CHAT] emitMessageReceived failed', message.id);
   }
   log.i('[CHAT] send local append', message.id, 'to', chat.peerId);
@@ -61,9 +68,12 @@ export async function sendChatMessage(chatId, text, type = 'text', metadata = {}
   return { messageId: message.id };
 }
 
-export async function handleIncomingChannelData(peerIdHex, data) {
+export async function handleIncomingChannelData(
+  peerIdHex: string,
+  data: Buffer | string
+): Promise<void> {
   try {
-    const msg = JSON.parse(
+    const msg: IncomingMessage = JSON.parse(
       Buffer.isBuffer(data) ? data.toString('utf8') : String(data)
     );
     if (msg.t === 'msg' && msg.message) {
@@ -77,17 +87,24 @@ export async function handleIncomingChannelData(peerIdHex, data) {
         chat.messages.push(m);
         try {
           await saveMetadataDebounced();
-        } catch {}
+        } catch (error) {
+          log.w('[CHAT] Failed to save metadata:', error);
+        }
         emitMessageReceived(m, chatId);
         log.i('[CHAT] received message', m.id, 'from', peerIdHex.slice(0, 16));
       } else {
         log.i('[CHAT] duplicate message ignored', m.id);
       }
     }
-  } catch {}
+  } catch (error) {
+    log.w('[CHAT] Error handling incoming data:', error);
+  }
 }
 
-export async function getChatMessages(chatId, limit = 50) {
+export async function getChatMessages(
+  chatId: string,
+  limit: number = 50
+): Promise<Message[]> {
   const chat = persistedState.chats.get(chatId);
   if (!chat) return [];
   const start = Math.max(0, chat.messages.length - limit);

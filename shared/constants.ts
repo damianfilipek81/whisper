@@ -1,6 +1,6 @@
 /**
- * RPC Command Constants (v2)
- * Kept compatible with frontend expectations
+ * Shared RPC Command Constants
+ * Used by both frontend (React Native) and backend (Bare)
  */
 
 // ============================================================================
@@ -45,4 +45,3 @@ export const APP_PROTOCOL = 'whisper/app/2.0.0';
 
 export const MESSAGE_TYPE_TEXT = 'text';
 export const MESSAGE_TYPE_VOICE = 'voice';
-

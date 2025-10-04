@@ -5,8 +5,7 @@ import { Buffer } from 'buffer';
 import { Paths } from 'expo-file-system';
 import { convertToString, parseRPCData } from '@/utils/rpcUtils';
 // @ts-ignore - bundle file is generated and doesn't have type definitions
-import bundle from '../appv2.bundle.mjs';
-// Removed PeersStorage - peers are now managed by backend
+import bundle from '@/../backend/build/app.bundle.mjs';
 import {
   RPC_INIT,
   RPC_SET_USER_PROFILE,
@@ -26,7 +25,7 @@ import {
   RPC_ERROR,
   RPC_GET_PEER_STATUS,
   RPC_GET_KNOWN_PEERS,
-} from '@/../backendv2/constants.mjs';
+} from '@/../shared/constants';
 
 // Types for service events
 export interface PearsServiceEvents {
@@ -285,11 +284,11 @@ export class PearsService {
     type: string = 'text',
     metadata: Record<string, any> = {}
   ): Promise<{ success: boolean; messageId: string }> {
-    return await this.sendRPCCommand(RPC_SEND_MESSAGE, { 
-      chatId, 
-      text, 
-      type, 
-      ...metadata 
+    return await this.sendRPCCommand(RPC_SEND_MESSAGE, {
+      chatId,
+      text,
+      type,
+      ...metadata,
     });
   }
 
