@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
-import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { Typography } from '@/components/ui/Typography';
 import { PeerConnection } from '@/types';
 
@@ -12,15 +11,9 @@ interface PeerItemProps {
 
 export const PeerItem: React.FC<PeerItemProps> = ({ peer, onPress }) => {
   const getStatusText = () => {
-    if (peer.status === 'connecting') return 'Connecting...';
-    if (peer.connected || peer.status === 'connected') return 'Connected';
-    return 'Tap to connect';
-  };
-
-  const getStatusColor = () => {
-    if (peer.status === 'connecting') return '#FF9800';
-    if (peer.connected || peer.status === 'connected') return '#4CAF50';
-    return '#9E9E9E';
+    if (peer.status === 'connected' || peer.connected) return 'Connected';
+    if (peer.status === 'disconnected') return 'Disconnected';
+    return 'Connecting...';
   };
 
   const getStatusStyle = () => {
@@ -42,14 +35,9 @@ export const PeerItem: React.FC<PeerItemProps> = ({ peer, onPress }) => {
           </Typography>
         </View>
       </View>
-      <View style={styles.rightSection}>
-        {peer.status === 'connecting' ? (
-          <ActivityIndicator size="small" color="#FF9800" />
-        ) : (
-          <Ionicons name="ellipse" size={12} color={getStatusColor()} />
-        )}
-        <Ionicons name="chatbubble-outline" size={20} color="#007AFF" />
-      </View>
+      {peer.status === 'connecting' && (
+        <ActivityIndicator size="small" color="#FF9800" />
+      )}
     </TouchableOpacity>
   );
 };
@@ -89,11 +77,6 @@ const styles = StyleSheet.create((theme) => ({
   statusConnecting: {
     color: '#FF9800',
     fontWeight: '500',
-  },
-  rightSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.sm,
   },
   statusDot: {
     width: 8,

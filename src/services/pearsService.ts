@@ -21,7 +21,6 @@ import {
   RPC_PEER_CONNECTED,
   RPC_PEER_DISCONNECTED,
   RPC_MESSAGE_RECEIVED,
-  RPC_PEER_CONNECTING,
   RPC_ERROR,
   RPC_GET_PEER_STATUS,
   RPC_GET_KNOWN_PEERS,
@@ -30,7 +29,6 @@ import {
 export interface PearsServiceEvents {
   onPeerConnected?: (peerId: string) => void;
   onPeerDisconnected?: (peerId: string, error?: string) => void;
-  onPeerConnecting?: (peerId: string) => void;
   onMessageReceived?: (message: any, chatId: string) => void;
   onError?: (error: string) => void;
 }
@@ -44,7 +42,6 @@ export class PearsService {
 
   public onPeerConnected?: (peerId: string) => void;
   public onPeerDisconnected?: (peerId: string, error?: string) => void;
-  public onPeerConnecting?: (peerId: string) => void;
   public onMessageReceived?: (message: any, chatId: string) => void;
   public onError?: (error: string) => void;
 
@@ -186,12 +183,6 @@ export class PearsService {
       console.log('🔍 Parsed event data:', eventData);
 
       switch (eventType) {
-        case RPC_PEER_CONNECTING:
-          console.log('🔄 [RPC_PEER_CONNECTING] Peer connecting...');
-          console.log('🆔 Peer ID:', eventData.data.peerId);
-          this.onPeerConnecting?.(eventData.data.peerId);
-          break;
-
         case RPC_PEER_CONNECTED:
           console.log(
             '🎉 [RPC_PEER_CONNECTED] Peer connected with guaranteed profile data'

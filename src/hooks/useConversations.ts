@@ -39,7 +39,7 @@ export const useConversations = () => {
           id: peerId,
           connected: chat.peerConnected || false,
           name: peerProfile?.name,
-          status: chat.peerConnected ? 'connected' : 'disconnected',
+          status: chat.peerConnected ? 'connected' : 'connecting',
         };
 
         const lastMessage = chat.messages[chat.messages.length - 1];
@@ -81,6 +81,7 @@ export const useConversations = () => {
       if (status === 'connected') {
         loadConversations();
       } else {
+        // status is 'disconnected' or 'connecting'
         setConversations((prev) =>
           prev.map((conv) =>
             conv.peer.id === peerId

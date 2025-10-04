@@ -12,7 +12,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
   isServerStarted,
   peerCount,
 }) => {
-  const statusText = isServerStarted ? 'Connected' : 'Connecting...';
+  const statusText = isServerStarted ? 'Network Ready' : 'Starting Network...';
 
   return (
     <View style={styles.statusBar}>

@@ -37,7 +37,7 @@ import {
 import { initSwarm, joinChat, joinInvite } from './swarm.js';
 import { getPeerStatus, deriveChatIdForPeer } from './peers.js';
 import { sendChatMessage, getChatMessages } from './chat.js';
-import { emitError, emitPeerConnecting } from './events.js';
+import { emitError } from './events.js';
 import { encodeShareCode, decodeShareCode } from './qr.js';
 import type { RPCRequestData, RPCResponse } from './types.js';
 
@@ -207,7 +207,6 @@ async function onStartChatWithUser(data: RPCRequestData): Promise<RPCResponse> {
   const { targetUserId } = data;
   if (!targetUserId) throw new Error('targetUserId required');
   const chatId = deriveChatIdForPeer(targetUserId);
-  emitPeerConnecting(targetUserId);
   await joinInvite(targetUserId);
   await joinChat(chatId);
   getOrCreateChat(chatId, targetUserId);

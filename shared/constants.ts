@@ -28,5 +28,4 @@ export const RPC_GET_KNOWN_PEERS = 13;
 export const RPC_PEER_CONNECTED = 100;
 export const RPC_PEER_DISCONNECTED = 101;
 export const RPC_MESSAGE_RECEIVED = 102;
-export const RPC_PEER_CONNECTING = 103;
 export const RPC_ERROR = 104;

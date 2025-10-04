@@ -39,7 +39,6 @@ var RPC_GET_KNOWN_PEERS = 13;
 var RPC_PEER_CONNECTED = 100;
 var RPC_PEER_DISCONNECTED = 101;
 var RPC_MESSAGE_RECEIVED = 102;
-var RPC_PEER_CONNECTING = 103;
 var RPC_ERROR = 104;
 
 // backend/state.ts
@@ -239,12 +238,6 @@ function emitMessageReceived(message, chatId) {
   send(RPC_MESSAGE_RECEIVED, {
     type: "message_received",
     data: { message, chatId, timestamp: Date.now() }
-  });
-}
-function emitPeerConnecting(peerId) {
-  send(RPC_PEER_CONNECTING, {
-    type: "peer_connecting",
-    data: { peerId, timestamp: Date.now() }
   });
 }
 function emitError(error, context = "") {
@@ -675,7 +668,6 @@ async function onStartChatWithUser(data) {
   const { targetUserId } = data;
   if (!targetUserId) throw new Error("targetUserId required");
   const chatId = deriveChatIdForPeer(targetUserId);
-  emitPeerConnecting(targetUserId);
   await joinInvite(targetUserId);
   await joinChat(chatId);
   getOrCreateChat(chatId, targetUserId);

@@ -3,7 +3,6 @@ import {
   RPC_PEER_CONNECTED,
   RPC_PEER_DISCONNECTED,
   RPC_MESSAGE_RECEIVED,
-  RPC_PEER_CONNECTING,
   RPC_ERROR,
 } from '../shared/constants.js';
 import type { Message, UserProfile } from './types.js';
@@ -39,13 +38,6 @@ export function emitMessageReceived(message: Message, chatId: string): void {
   send(RPC_MESSAGE_RECEIVED, {
     type: 'message_received',
     data: { message, chatId, timestamp: Date.now() },
-  });
-}
-
-export function emitPeerConnecting(peerId: string): void {
-  send(RPC_PEER_CONNECTING, {
-    type: 'peer_connecting',
-    data: { peerId, timestamp: Date.now() },
   });
 }
 

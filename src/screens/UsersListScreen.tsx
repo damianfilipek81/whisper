@@ -21,7 +21,6 @@ export const UsersListScreen: React.FC = () => {
   const { openChat, navigateToAddPeer, navigateToSettings } = useChatNavigation();
 
   usePeerEvents({
-    onPeerConnecting: (peerId) => updatePeerStatus(peerId, 'connecting'),
     onPeerConnected: (peerId) => updatePeerStatus(peerId, 'connected'),
     onPeerDisconnected: (peerId) => updatePeerStatus(peerId, 'disconnected'),
   });
