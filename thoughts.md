@@ -56,3 +56,20 @@
   -- got too hyped about using STT (speech-to-text) and underestimated the P2P networking complexity
   -- spent too much time on the "easy" parts (UI, audio recording) while the real challenge was the backend architecture
   -- lesson learned: always tackle the biggest unknowns and technical risks first in any project
+
+edit 04.10.2025:
+
+- changed:
+  -- improved connectivity
+  -- some basic cleanup
+  -- migrate backend to typescript (was able to find correct CLI that works with bare-pack)
+
+- still todo:
+  -- better cleanup, refacotr some components/screens to more modulare
+  -- check backend for security vulnerabilities (e.g. not encrypted connections or saved data)
+  -- improve UI for addPeers screen and chat screen
+  -- improve UI for android
+  -- add tests
+  -- add expo-local-authentication on app start so only authorized user can open app
+  -- add notifications when app in background (we could probably add central server for push notifications even if app is off (??))
+  -- check crutial thing (chatScreen) for unnecessary rerenders
