@@ -1,12 +1,18 @@
 import b4a from 'b4a';
-import crypto from 'hypercore-crypto';
 import { log } from './logger.mjs';
 
-import { state, getOrCreatePeer, getOrCreateChat } from './state.mjs';
+import { 
+  persistedState, 
+  memoryState,
+  getOrCreatePeer, 
+  getOrCreateChat,
+  registerActiveConnection,
+  unregisterActiveConnection
+} from './state.mjs';
 import { emitPeerDisconnected } from './events.mjs';
 
 export function getSelfIdHex() {
-  return b4a.toString(state.userKeyPair.publicKey, 'hex');
+  return b4a.toString(persistedState.userKeyPair.publicKey, 'hex');
 }
 
 export function deriveChatIdForPeer(peerIdHex) {
@@ -14,34 +20,35 @@ export function deriveChatIdForPeer(peerIdHex) {
   return myId < peerIdHex ? `${myId}:${peerIdHex}` : `${peerIdHex}:${myId}`;
 }
 
-export async function registerConnection(peerIdHex, conn) {
+export async function registerConnection(peerIdHex, chatWriter) {
+  // Update persisted peer metadata
   const peer = getOrCreatePeer(peerIdHex);
   peer.lastSeen = Date.now();
-  peer.conn = conn;
   
   log.i('[PEERS] registerConnection for', peerIdHex);
 
+  // Get/create chat
   const chatId = deriveChatIdForPeer(peerIdHex);
-  // Use getOrCreateChat from state.mjs for consistency
   const chat = getOrCreateChat(chatId, peerIdHex);
-  chat.connected = true; // Mark as connected when peer actually connects
   
-  return chatId; // Return chatId for use in swarm.mjs
+  // Register active connection in memory
+  const transport = memoryState.peerTransports.get(peerIdHex);
+  registerActiveConnection(peerIdHex, chatWriter, transport);
+  
+  return chatId;
 }
 
 export function unregisterConnection(peerIdHex, error) {
-  const peer = state.peers.get(peerIdHex);
-  if (peer) delete peer.conn;
-  // Also clear tracked transport
-  state.peerTransports.delete(peerIdHex);
+  // Remove from memory
+  unregisterActiveConnection(peerIdHex);
+  memoryState.peerTransports.delete(peerIdHex);
+  
   log.i('[PEERS] unregisterConnection for', peerIdHex);
-  const chatId = deriveChatIdForPeer(peerIdHex);
-  const chat = state.chats.get(chatId);
-  if (chat) chat.connected = false;
+  
+  // Emit disconnect event
   emitPeerDisconnected(peerIdHex, error);
 }
 
 export function getPeerStatus(peerIdHex) {
-  const peer = state.peers.get(peerIdHex);
-  return peer && peer.conn ? 'connected' : 'disconnected';
+  return memoryState.activeConnections.has(peerIdHex) ? 'connected' : 'disconnected';
 }

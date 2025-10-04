@@ -1,37 +1,43 @@
 import Corestore from 'corestore';
 import { log } from './logger.mjs';
 
-import { state } from './state.mjs';
+import { persistedState, memoryState } from './state.mjs';
 
 export async function initializeStorage(storagePath) {
-  state.storagePath = storagePath;
-  state.corestore = new Corestore(storagePath);
-  await state.corestore.ready();
-  state.localCore = state.corestore.get({ name: 'local' });
-  await state.localCore.ready();
+  memoryState.storagePath = storagePath;
+  memoryState.corestore = new Corestore(storagePath);
+  await memoryState.corestore.ready();
+  memoryState.localCore = memoryState.corestore.get({ name: 'local' });
+  await memoryState.localCore.ready();
 }
 
 export async function closeStorage() {
   try {
-    await state.corestore?.close();
+    await memoryState.corestore?.close();
   } catch {}
 }
 
 export async function saveMetadata() {
-  if (!state.localCore) return;
-  const peers = JSON.stringify(Array.from(state.peers.values()));
+  if (!memoryState.localCore) return;
+  
+  // Save peers (persisted metadata only - no connection state)
+  const peers = JSON.stringify(Array.from(persistedState.peers.values()));
+  
+  // Save chats (messages only - no connected status)
   const chats = JSON.stringify(
-    Array.from(state.chats.values()).map((c) => ({
+    Array.from(persistedState.chats.values()).map((c) => ({
       id: c.id,
       peerId: c.peerId,
-      // Don't persist connected status - it's ephemeral and should start as false
       messages: c.messages,
     }))
   );
-  const profile = JSON.stringify(state.profile || {});
-  await state.localCore.setUserData('v2_peers', peers);
-  await state.localCore.setUserData('v2_chats', chats);
-  await state.localCore.setUserData('v2_profile', profile);
+  
+  // Save profile
+  const profile = JSON.stringify(persistedState.profile || {});
+  
+  await memoryState.localCore.setUserData('v2_peers', peers);
+  await memoryState.localCore.setUserData('v2_chats', chats);
+  await memoryState.localCore.setUserData('v2_profile', profile);
 }
 
 let _saveTimer = null;
@@ -52,22 +58,24 @@ export async function saveMetadataDebounced(delay = 300) {
 }
 
 export async function loadMetadata() {
-  if (!state.localCore) return;
+  if (!memoryState.localCore) return;
+  
   log.i('[STORAGE] Loading metadata from storage...');
-  const peersStr = await state.localCore.getUserData('v2_peers');
-  const chatsStr = await state.localCore.getUserData('v2_chats');
-  const profileStr = await state.localCore.getUserData('v2_profile');
+  
+  const peersStr = await memoryState.localCore.getUserData('v2_peers');
+  const chatsStr = await memoryState.localCore.getUserData('v2_chats');
+  const profileStr = await memoryState.localCore.getUserData('v2_profile');
   
   if (profileStr) {
-    state.profile = JSON.parse(profileStr.toString());
-    log.i(`[STORAGE] Loaded user profile: ${state.profile?.name || 'NONE'}`);
+    persistedState.profile = JSON.parse(profileStr.toString());
+    log.i(`[STORAGE] Loaded user profile: ${persistedState.profile?.name || 'NONE'}`);
   }
   
   if (peersStr) {
     const peers = JSON.parse(peersStr.toString());
     log.i(`[STORAGE] Loaded ${peers.length} peers`);
     for (const p of peers) {
-      state.peers.set(p.peerId, p);
+      persistedState.peers.set(p.peerId, p);
       log.i(
         `[STORAGE] Peer ${p.peerId.slice(0, 8)}: profile.name=${
           p.profile?.name || 'NONE'
@@ -75,6 +83,7 @@ export async function loadMetadata() {
       );
     }
   }
+  
   if (chatsStr) {
     const chats = JSON.parse(chatsStr.toString());
     log.i(
@@ -84,9 +93,8 @@ export async function loadMetadata() {
       )} total messages`
     );
     for (const c of chats) {
-      // Always start with connected: false - will update to true when peer actually connects
-      c.connected = false;
-      state.chats.set(c.id, c);
+      // Note: connected status is NOT persisted - it's always false on load
+      persistedState.chats.set(c.id, c);
     }
   }
 }

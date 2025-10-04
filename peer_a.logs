@@ -1,13 +1,13 @@
-W1003 09:41:27.980391 4231856576 Scheduler.cpp:142] Scheduler::~Scheduler() was called (address: 0x124c36880).
+W1004 15:02:57.615592 4213899072 Scheduler.cpp:142] Scheduler::~Scheduler() was called (address: 0x1252cb780).
 🧹 Cleaning up pearsService...
 🧹 Cleaning up pearsService...
 [INFO] [Nitro.JSICache] Destroying JSICache...
-W1003 09:41:28.046993 1817079808 UIManagerBinding.cpp:59] UIManagerBinding::~UIManagerBinding() was called (address: 0x120660fd8).
-W1003 09:41:28.047173 1817079808 UIManager.cpp:57] UIManager::~UIManager() was called (address: 0x148c90618).
+W1004 15:02:57.663115 1810001920 UIManagerBinding.cpp:59] UIManagerBinding::~UIManagerBinding() was called (address: 0x11a06a318).
+W1004 15:02:57.663141 1810001920 UIManager.cpp:57] UIManager::~UIManager() was called (address: 0x124d0cf18).
 [RNMMKV]: Destroying MMKV instance "settings-storage"...
 [I] <MMKV.cpp:1189::sync> MMKV::sync, SyncFlag = 1
 [I] <MMKV.cpp:313::clearMemoryCache> clearMemoryCache [settings-storage]
-[I] <MemoryFile.cpp:107::close> closing fd[0x1f], /var/mobile/Containers/Data/Application/417B2D97-52F9-4C1A-A73E-48811B082B7C/Documents/mmkv/settings-storage
+[I] <MemoryFile.cpp:107::close> closing fd[0x1a], /var/mobile/Containers/Data/Application/F97D3EE8-7A64-464C-8D62-4ABBF71150A3/Documents/mmkv/settings-storage
 🟢 Posting 'appContextDestroys' event to registered modules
 [INFO] [Nitro.HybridObjectRegistry] Unregistering HybridObject "UnistylesRuntime"...
 [INFO] [Nitro.HybridObjectRegistry] Unregistering HybridObject "UnistylesStyleSheet"...
@@ -47,181 +47,56 @@ W1003 09:41:28.047173 1817079808 UIManager.cpp:57] UIManager::~UIManager() was c
 Unbalanced calls start/end for tag 20
 Unbalanced calls start/end for tag 19
 Running "main" with {"rootTag":11,"initialProps":null,"fabric":true}
-[RNMMKV]: Initializing MMKV at /var/mobile/Containers/Data/Application/417B2D97-52F9-4C1A-A73E-48811B082B7C/Documents/mmkv...
-[I] <MMKV.cpp:228::initializeMMKV> root dir: /var/mobile/Containers/Data/Application/417B2D97-52F9-4C1A-A73E-48811B082B7C/Documents/mmkv
+[RNMMKV]: Initializing MMKV at /var/mobile/Containers/Data/Application/F97D3EE8-7A64-464C-8D62-4ABBF71150A3/Documents/mmkv...
+[I] <MMKV.cpp:228::initializeMMKV> root dir: /var/mobile/Containers/Data/Application/F97D3EE8-7A64-464C-8D62-4ABBF71150A3/Documents/mmkv
 [RNMMKV]: Creating MMKV instance "settings-storage"... (Path: , Encrypted: false)
 [I] <MMKV_IO.cpp:218::loadMetaInfoAndCheck> meta file [settings-storage] has flag [0]
-[I] <MemoryFile.cpp:101::open> open fd[0x18], flag 7, /var/mobile/Containers/Data/Application/417B2D97-52F9-4C1A-A73E-48811B082B7C/Documents/mmkv/settings-storage
-[I] <MemoryFile.cpp:215::mmap> mmap to address [0x105acc000], oldPtr [0x0], [/var/mobile/Containers/Data/Application/417B2D97-52F9-4C1A-A73E-48811B082B7C/Documents/mmkv/settings-storage]
-[I] <MMKV_IO.cpp:84::loadFromFile> loading [settings-storage] with 2105 actual size, file size 16384, InterProcess 0, meta info version:4
-[I] <MMKV_IO.cpp:89::loadFromFile> loading [settings-storage] with crc 2962476905 sequence 1 version 4
-[I] <MMKV_IO.cpp:133::loadFromFile> loaded [settings-storage] with 2 key-values
+[I] <MemoryFile.cpp:101::open> open fd[0x1f], flag 7, /var/mobile/Containers/Data/Application/F97D3EE8-7A64-464C-8D62-4ABBF71150A3/Documents/mmkv/settings-storage
+[I] <MemoryFile.cpp:215::mmap> mmap to address [0x105e68000], oldPtr [0x0], [/var/mobile/Containers/Data/Application/F97D3EE8-7A64-464C-8D62-4ABBF71150A3/Documents/mmkv/settings-storage]
+[I] <MMKV_IO.cpp:84::loadFromFile> loading [settings-storage] with 7658 actual size, file size 16384, InterProcess 0, meta info version:4
+[I] <MMKV_IO.cpp:89::loadFromFile> loading [settings-storage] with crc 1638883233 sequence 1 version 4
+[I] <MMKV_IO.cpp:133::loadFromFile> loaded [settings-storage] with 4 key-values
 🚀 Initializing pearsService...
 🚀 Starting pearsService initialization...
 🟢 Creating JS object for module 'FileSystem'
-'🔍 Sending RPC command:', 1, 'with payload:', '{"storagePath":"/var/mobile/Containers/Data/Application/417B2D97-52F9-4C1A-A73E-48811B082B7C/Documents//whisper-hyper-data"}'
+'🔍 Sending RPC command:', 1, 'with payload:', '{"storagePath":"/var/mobile/Containers/Data/Application/F97D3EE8-7A64-464C-8D62-4ABBF71150A3/Documents//whisper-hyper-data"}'
 🟢 Creating JS object for module 'ExpoKeepAwake'
-[09:41:30:386] [INFO] [INIT] 🚀 Starting fresh initialization...
-[09:41:30:386] [INFO] [INIT] Storage path: /var/mobile/Containers/Data/Application/417B2D97-52F9-4C1A-A73E-48811B082B7C/Documents//whisper-hyper-data
-[09:41:30:436] [INFO] [STORAGE] Loading metadata from storage...
-[09:41:30:436] [INFO] [STORAGE] Loaded user profile: Ggugjjv
-[09:41:30:436] [INFO] [STORAGE] Loaded 1 peers
-[09:41:30:436] [INFO] [STORAGE] Peer e2eabfc3: profile.name=Hej
-[09:41:30:436] [INFO] [STORAGE] Loaded 1 chats with 5 total messages
-[09:41:30:437] [INFO] [INIT] Joining own invite topic
-[09:41:30:437] [INFO] [SWARM] Joining invite topic for peer 846eaacf...
-[09:41:30:438] [INFO] [SWARM] Waiting for invite DHT announce/lookup to complete...
+[15:02:58:941] [INFO] [INIT] 🚀 Starting fresh initialization...
+[15:02:58:942] [INFO] [INIT] Storage path: /var/mobile/Containers/Data/Application/F97D3EE8-7A64-464C-8D62-4ABBF71150A3/Documents//whisper-hyper-data
+[15:02:58:980] [INFO] [STORAGE] Loading metadata from storage...
+[15:02:58:980] [INFO] [STORAGE] Loaded user profile: Fssfsfsf
+[15:02:58:980] [INFO] [STORAGE] Loaded 1 peers
+[15:02:58:980] [INFO] [STORAGE] Peer 5e2f14f6: profile.name=Jhh
+[15:02:58:980] [INFO] [STORAGE] Loaded 1 chats with 1 total messages
+[15:02:58:981] [INFO] [INIT] Joining own invite topic
+[15:02:58:981] [INFO] [SWARM] Joining invite topic for peer f5b5f0c4...
+[15:02:58:982] [INFO] [SWARM] Waiting for invite DHT announce/lookup to complete...
+Successfully installed JSI bindings for react-native-executorch!
+🟢 Creating JS object for module 'ExpoAsset'
+🟢 Creating JS object for module 'ExpoFontLoader'
 🚀 Initializing pearsService...
 ⏳ Already initializing, waiting...
-[GESTURE HANDLER] Initialize gesture handler for view <RCTSurfaceView: 0x10a3ef800; frame = (0 0; 390 844); autoresize = W+H; gestureRecognizers = <NSArray: 0x135f66d30>; layer = <CALayer: 0x149ed6fc0>>
-[09:41:32:427] [INFO] [SWARM] Invite topic joined, peer discovery active...
-[09:41:32:427] [INFO] [INIT] Starting background join for 1 chat(s)...
-[09:41:32:427] [INFO] [INIT] ✅ Initialization complete! userId: 846eaacfb7a82bc7
-[09:41:32:430] [INFO] [INIT-BG] Starting DHT lookup and hole punching for existing chats...
-[09:41:32:430] [INFO] [INIT-BG] Joining chat topic for 846eaacfb7a82bc7...
-[09:41:32:431] [INFO] [SWARM] Joining chat topic for 846eaacfb7a82bc7...
-[09:41:32:431] [INFO] [SWARM] Waiting for DHT announce/lookup to complete...
-'✅ pearsService initialized successfully with backend userId:', '846eaacfb7a82bc797704f9f99091caf5b73ea5c86f1913a9e086c038162efab'
+[GESTURE HANDLER] Initialize gesture handler for view <RCTSurfaceView: 0x139784e00; frame = (0 0; 390 844); autoresize = W+H; gestureRecognizers = <NSArray: 0x11a304920>; layer = <CALayer: 0x11a34c0c0>>
+[15:03:02:110] [INFO] [SWARM] Invite topic joined, peer discovery active...
+[15:03:02:110] [INFO] [INIT] Starting background join for 1 chat(s)...
+[15:03:02:111] [INFO] [INIT] ✅ Initialization complete! userId: f5b5f0c428392f25
+[15:03:02:114] [INFO] [INIT-BG] Starting DHT lookup and hole punching for existing chats...
+[15:03:02:114] [INFO] [INIT-BG] Joining chat topic for 5e2f14f60f317bf8...
+[15:03:02:115] [INFO] [SWARM] Joining NEW chat topic for 5e2f14f60f317bf8...
+[15:03:02:115] [INFO] [SWARM] Waiting for DHT announce/lookup to complete...
+'✅ pearsService initialized successfully with backend userId:', 'f5b5f0c428392f25df2a5c3cf61271d7e97acc91de36776d0abf3be83676b0ba'
 ✅ pearsService initialized
 ✅ pearsService initialized
 '🔍 Sending RPC command:', 8, 'with payload:', '{}'
 '🔍 Sending RPC command:', 13, 'with payload:', '{}'
-[09:41:33:020] [INFO] [SWARM] Chat topic joined, listening for connections...
-[09:41:33:020] [INFO] [INIT-BG] ✓ Joined chat 846eaacfb7a82bc7
-[09:41:33:020] [INFO] [INIT-BG] Background joins completed
-[09:41:33:508] [INFO] [SWARM] connection: candidateId= 20793fe299b8b5107023253291aeeacb372d856845415679d5c2c0c4161ac06d
-[09:41:33:510] [INFO] [CONTROL] Opening control channel, sending handshake...
-[09:41:33:516] [INFO] [CONTROL] Handshake complete with e2eabfc30584456aa20fa45f82ae6e4c22ce130f8c4b66c80e6315bdb881d9e2 profile: true
-[09:41:33:517] [INFO] [CONTROL] Profile saved: { name: 'Hej', createdAt: 1759474514781 }
-[09:41:33:522] [INFO] [CONTROL] Metadata saved
-[09:41:33:522] [INFO] [PEERS] registerConnection for e2eabfc30584456aa20fa45f82ae6e4c22ce130f8c4b66c80e6315bdb881d9e2
-[09:41:33:523] [INFO] [SWARM] Joining chat topic for 846eaacfb7a82bc7...
-[09:41:33:523] [INFO] [SWARM] Waiting for DHT announce/lookup to complete...
-[09:41:34:012] [INFO] [SWARM] Chat topic joined, listening for connections...
-[09:41:34:013] [INFO] [CONTROL] RPC_PEER_CONNECTED emitted with profile: true
-'🔍 Backend event received:', 100, 'Raw data type:', 'object'
-[09:41:34:026] [INFO] [CHAT] close for e2eabfc30584456aa20fa45f82ae6e4c22ce130f8c4b66c80e6315bdb881d9e2
-'🔍 Parsed event data:', { type: 'peer_connected',
-  data: 
-   { peerId: 'e2eabfc30584456aa20fa45f82ae6e4c22ce130f8c4b66c80e6315bdb881d9e2',
-     chatId: '846eaacfb7a82bc797704f9f99091caf5b73ea5c86f1913a9e086c038162efab:e2eabfc30584456aa20fa45f82ae6e4c22ce130f8c4b66c80e6315bdb881d9e2',
-     profile: { name: 'Hej', createdAt: 1759474514781 },
-     timestamp: 1759477294012 } }
-🎉 [RPC_PEER_CONNECTED] Peer connected with guaranteed profile data
-'🆔 Peer ID:', 'e2eabfc30584456aa20fa45f82ae6e4c22ce130f8c4b66c80e6315bdb881d9e2'
-'👤 Profile:', { name: 'Hej', createdAt: 1759474514781 }
-🎉 Peer connected: e2eabfc30584456aa20fa45f82ae6e4c22ce130f8c4b66c80e6315bdb881d9e2
-'🔍 Sending RPC command:', 8, 'with payload:', '{}'
-'🔍 Sending RPC command:', 13, 'with payload:', '{}'
-[09:41:34:067] [INFO] [CONTROL] close for e2eabfc30584456aa20fa45f82ae6e4c22ce130f8c4b66c80e6315bdb881d9e2
-[09:41:34:067] [INFO] [PEERS] unregisterConnection for e2eabfc30584456aa20fa45f82ae6e4c22ce130f8c4b66c80e6315bdb881d9e2
-'🔍 Backend event received:', 101, 'Raw data type:', 'object'
-'🔍 Parsed event data:', { type: 'peer_disconnected',
-  data: 
-   { peerId: 'e2eabfc30584456aa20fa45f82ae6e4c22ce130f8c4b66c80e6315bdb881d9e2',
-     error: null,
-     timestamp: 1759477294067 } }
-💔 [STEP 5] RPC_PEER_DISCONNECTED event - triggering onPeerDisconnected callback
-'🆔 Peer ID:', 'e2eabfc30584456aa20fa45f82ae6e4c22ce130f8c4b66c80e6315bdb881d9e2'
-'💔 Peer disconnected: e2eabfc30584456aa20fa45f82ae6e4c22ce130f8c4b66c80e6315bdb881d9e2', ''
-[09:41:36:262] [INFO] [SWARM] connection: candidateId= 20793fe299b8b5107023253291aeeacb372d856845415679d5c2c0c4161ac06d
-[09:41:36:263] [INFO] [CONTROL] Opening control channel, sending handshake...
-[09:41:36:265] [INFO] [CONTROL] Handshake complete with e2eabfc30584456aa20fa45f82ae6e4c22ce130f8c4b66c80e6315bdb881d9e2 profile: true
-[09:41:36:265] [INFO] [CONTROL] Profile saved: { name: 'Hej', createdAt: 1759474514781 }
-[09:41:36:267] [INFO] [CONTROL] Metadata saved
-[09:41:36:267] [INFO] [PEERS] registerConnection for e2eabfc30584456aa20fa45f82ae6e4c22ce130f8c4b66c80e6315bdb881d9e2
-[09:41:36:267] [INFO] [SWARM] Joining chat topic for 846eaacfb7a82bc7...
-[09:41:36:268] [INFO] [SWARM] Waiting for DHT announce/lookup to complete...
-[09:41:36:768] [INFO] [SWARM] Chat topic joined, listening for connections...
-[09:41:36:769] [INFO] [CONTROL] RPC_PEER_CONNECTED emitted with profile: true
-'🔍 Backend event received:', 100, 'Raw data type:', 'object'
-'🔍 Parsed event data:', { type: 'peer_connected',
-  data: 
-   { peerId: 'e2eabfc30584456aa20fa45f82ae6e4c22ce130f8c4b66c80e6315bdb881d9e2',
-     chatId: '846eaacfb7a82bc797704f9f99091caf5b73ea5c86f1913a9e086c038162efab:e2eabfc30584456aa20fa45f82ae6e4c22ce130f8c4b66c80e6315bdb881d9e2',
-     profile: { name: 'Hej', createdAt: 1759474514781 },
-     timestamp: 1759477296769 } }
-🎉 [RPC_PEER_CONNECTED] Peer connected with guaranteed profile data
-'🆔 Peer ID:', 'e2eabfc30584456aa20fa45f82ae6e4c22ce130f8c4b66c80e6315bdb881d9e2'
-'👤 Profile:', { name: 'Hej', createdAt: 1759474514781 }
-🎉 Peer connected: e2eabfc30584456aa20fa45f82ae6e4c22ce130f8c4b66c80e6315bdb881d9e2
-'🔍 Sending RPC command:', 8, 'with payload:', '{}'
-'🔍 Sending RPC command:', 13, 'with payload:', '{}'
-[09:41:36:783] [INFO] [CONTROL] close for e2eabfc30584456aa20fa45f82ae6e4c22ce130f8c4b66c80e6315bdb881d9e2
-[09:41:36:783] [INFO] [PEERS] unregisterConnection for e2eabfc30584456aa20fa45f82ae6e4c22ce130f8c4b66c80e6315bdb881d9e2
-[09:41:36:783] [INFO] [CHAT] close for e2eabfc30584456aa20fa45f82ae6e4c22ce130f8c4b66c80e6315bdb881d9e2
-'🔍 Backend event received:', 101, 'Raw data type:', 'object'
-'🔍 Parsed event data:', { type: 'peer_disconnected',
-  data: 
-   { peerId: 'e2eabfc30584456aa20fa45f82ae6e4c22ce130f8c4b66c80e6315bdb881d9e2',
-     error: null,
-     timestamp: 1759477296783 } }
-💔 [STEP 5] RPC_PEER_DISCONNECTED event - triggering onPeerDisconnected callback
-'🆔 Peer ID:', 'e2eabfc30584456aa20fa45f82ae6e4c22ce130f8c4b66c80e6315bdb881d9e2'
-'💔 Peer disconnected: e2eabfc30584456aa20fa45f82ae6e4c22ce130f8c4b66c80e6315bdb881d9e2', ''
-nw_socket_handle_socket_event [C106:1] Socket SO_ERROR [60: Operation timed out]
-nw_protocol_socket_set_no_wake_from_sleep [C106:1] setsockopt SO_NOWAKEFROMSLEEP failed [22: Invalid argument]
+[15:03:02:923] [INFO] [SWARM] Chat topic joined, listening for connections...
+[15:03:02:923] [INFO] [INIT-BG] ✓ Joined chat 5e2f14f60f317bf8
+[15:03:02:924] [INFO] [INIT-BG] Background joins completed
+nw_socket_handle_socket_event [C61:1] Socket SO_ERROR [60: Operation timed out]
+nw_protocol_socket_set_no_wake_from_sleep [C61:1] setsockopt SO_NOWAKEFROMSLEEP failed [22: Invalid argument]
 nw_protocol_socket_set_no_wake_from_sleep setsockopt SO_NOWAKEFROMSLEEP failed [22: Invalid argument]
-nw_endpoint_flow_failed_with_error [C106 192.168.1.6:8097 in_progress socket-flow (satisfied (Path is satisfied), viable, interface: en0[802.11], ipv4, ipv6, dns, uses wifi)] already failing, returning
-nw_connection_get_connected_socket_block_invoke [C106] Client called nw_connection_get_connected_socket on unconnected nw_connection
-TCP Conn 0x135d072a0 Failed : error 0:60 [60]
-nw_connection_copy_connected_local_endpoint_block_invoke [C106] Client called nw_connection_copy_connected_local_endpoint on unconnected nw_connection
-nw_connection_copy_connected_remote_endpoint_block_invoke [C106] Client called nw_connection_copy_connected_remote_endpoint on unconnected nw_connection
-[09:41:44:301] [INFO] [SWARM] connection: candidateId= 20793fe299b8b5107023253291aeeacb372d856845415679d5c2c0c4161ac06d
-[09:41:44:301] [INFO] [CONTROL] Opening control channel, sending handshake...
-[09:41:44:301] [INFO] [CONTROL] Handshake complete with e2eabfc30584456aa20fa45f82ae6e4c22ce130f8c4b66c80e6315bdb881d9e2 profile: true
-[09:41:44:301] [INFO] [CONTROL] Profile saved: { name: 'Hej', createdAt: 1759474514781 }
-[09:41:44:302] [INFO] [CONTROL] Metadata saved
-[09:41:44:302] [INFO] [PEERS] registerConnection for e2eabfc30584456aa20fa45f82ae6e4c22ce130f8c4b66c80e6315bdb881d9e2
-[09:41:44:302] [INFO] [SWARM] Joining chat topic for 846eaacfb7a82bc7...
-[09:41:44:302] [INFO] [SWARM] Waiting for DHT announce/lookup to complete...
-[09:41:44:762] [INFO] [SWARM] Chat topic joined, listening for connections...
-[09:41:44:763] [INFO] [CONTROL] RPC_PEER_CONNECTED emitted with profile: true
-'🔍 Backend event received:', 100, 'Raw data type:', 'object'
-'🔍 Parsed event data:', { type: 'peer_connected',
-  data: 
-   { peerId: 'e2eabfc30584456aa20fa45f82ae6e4c22ce130f8c4b66c80e6315bdb881d9e2',
-     chatId: '846eaacfb7a82bc797704f9f99091caf5b73ea5c86f1913a9e086c038162efab:e2eabfc30584456aa20fa45f82ae6e4c22ce130f8c4b66c80e6315bdb881d9e2',
-     profile: { name: 'Hej', createdAt: 1759474514781 },
-     timestamp: 1759477304763 } }
-🎉 [RPC_PEER_CONNECTED] Peer connected with guaranteed profile data
-'🆔 Peer ID:', 'e2eabfc30584456aa20fa45f82ae6e4c22ce130f8c4b66c80e6315bdb881d9e2'
-'👤 Profile:', { name: 'Hej', createdAt: 1759474514781 }
-🎉 Peer connected: e2eabfc30584456aa20fa45f82ae6e4c22ce130f8c4b66c80e6315bdb881d9e2
-'🔍 Sending RPC command:', 8, 'with payload:', '{}'
-[09:41:44:773] [INFO] [CHAT] close for e2eabfc30584456aa20fa45f82ae6e4c22ce130f8c4b66c80e6315bdb881d9e2
-'🔍 Sending RPC command:', 13, 'with payload:', '{}'
-[09:41:44:796] [INFO] [CONTROL] close for e2eabfc30584456aa20fa45f82ae6e4c22ce130f8c4b66c80e6315bdb881d9e2
-[09:41:44:797] [INFO] [PEERS] unregisterConnection for e2eabfc30584456aa20fa45f82ae6e4c22ce130f8c4b66c80e6315bdb881d9e2
-'🔍 Backend event received:', 101, 'Raw data type:', 'object'
-'🔍 Parsed event data:', { type: 'peer_disconnected',
-  data: 
-   { peerId: 'e2eabfc30584456aa20fa45f82ae6e4c22ce130f8c4b66c80e6315bdb881d9e2',
-     error: null,
-     timestamp: 1759477304797 } }
-💔 [STEP 5] RPC_PEER_DISCONNECTED event - triggering onPeerDisconnected callback
-'🆔 Peer ID:', 'e2eabfc30584456aa20fa45f82ae6e4c22ce130f8c4b66c80e6315bdb881d9e2'
-'💔 Peer disconnected: e2eabfc30584456aa20fa45f82ae6e4c22ce130f8c4b66c80e6315bdb881d9e2', ''
-[09:42:07:111] [INFO] [SWARM] connection: candidateId= 20793fe299b8b5107023253291aeeacb372d856845415679d5c2c0c4161ac06d
-[09:42:07:111] [INFO] [CONTROL] Opening control channel, sending handshake...
-[09:42:07:112] [INFO] [CONTROL] Handshake complete with e2eabfc30584456aa20fa45f82ae6e4c22ce130f8c4b66c80e6315bdb881d9e2 profile: true
-[09:42:07:112] [INFO] [CONTROL] Profile saved: { name: 'Hej', createdAt: 1759474514781 }
-[09:42:07:115] [INFO] [CONTROL] Metadata saved
-[09:42:07:115] [INFO] [PEERS] registerConnection for e2eabfc30584456aa20fa45f82ae6e4c22ce130f8c4b66c80e6315bdb881d9e2
-[09:42:07:115] [INFO] [SWARM] Joining chat topic for 846eaacfb7a82bc7...
-[09:42:07:115] [INFO] [SWARM] Waiting for DHT announce/lookup to complete...
-[09:42:07:593] [INFO] [SWARM] Chat topic joined, listening for connections...
-[09:42:07:594] [INFO] [CONTROL] RPC_PEER_CONNECTED emitted with profile: true
-'🔍 Backend event received:', 100, 'Raw data type:', 'object'
-'🔍 Parsed event data:', { type: 'peer_connected',
-  data: 
-   { peerId: 'e2eabfc30584456aa20fa45f82ae6e4c22ce130f8c4b66c80e6315bdb881d9e2',
-     chatId: '846eaacfb7a82bc797704f9f99091caf5b73ea5c86f1913a9e086c038162efab:e2eabfc30584456aa20fa45f82ae6e4c22ce130f8c4b66c80e6315bdb881d9e2',
-     profile: { name: 'Hej', createdAt: 1759474514781 },
-     timestamp: 1759477327594 } }
-🎉 [RPC_PEER_CONNECTED] Peer connected with guaranteed profile data
-'🆔 Peer ID:', 'e2eabfc30584456aa20fa45f82ae6e4c22ce130f8c4b66c80e6315bdb881d9e2'
-'👤 Profile:', { name: 'Hej', createdAt: 1759474514781 }
-🎉 Peer connected: e2eabfc30584456aa20fa45f82ae6e4c22ce130f8c4b66c80e6315bdb881d9e2
-'🔍 Sending RPC command:', 8, 'with payload:', '{}'
-'🔍 Sending RPC command:', 13, 'with payload:', '{}'
+nw_endpoint_flow_failed_with_error [C61 192.168.1.6:8097 in_progress socket-flow (satisfied (Path is satisfied), viable, interface: en0[802.11], ipv4, ipv6, dns, uses wifi)] already failing, returning
+nw_connection_get_connected_socket_block_invoke [C61] Client called nw_connection_get_connected_socket on unconnected nw_connection
+TCP Conn 0x12016e120 Failed : error 0:60 [60]
+nw_connection_copy_connected_local_endpoint_block_invoke [C61] Client called nw_connection_copy_connected_local_endpoint on unconnected nw_connection
+nw_connection_copy_connected_remote_endpoint_block_invoke [C61] Client called nw_connection_copy_connected_remote_endpoint on unconnected nw_connection

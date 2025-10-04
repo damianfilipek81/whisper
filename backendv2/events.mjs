@@ -1,4 +1,4 @@
-import { state } from './state.mjs';
+import { memoryState } from './state.mjs';
 import {
   RPC_PEER_CONNECTED,
   RPC_PEER_DISCONNECTED,
@@ -8,8 +8,8 @@ import {
 } from './constants.mjs';
 
 function send(eventType, payload) {
-  if (!state.rpc) return;
-  const req = state.rpc.request(eventType);
+  if (!memoryState.rpc) return;
+  const req = memoryState.rpc.request(eventType);
   req.send(Buffer.from(JSON.stringify(payload)));
 }
 

@@ -19,7 +19,14 @@ import {
   RPC_GET_KNOWN_PEERS,
 } from './constants.mjs';
 
-import { state, clearState, getAllChats, getOrCreateChat } from './state.mjs';
+import { 
+  persistedState, 
+  memoryState,
+  clearAllState, 
+  clearMemoryState,
+  getAllChats, 
+  getOrCreateChat 
+} from './state.mjs';
 import {
   initializeStorage,
   closeStorage,
@@ -93,14 +100,17 @@ const rpc = new RPC(IPC, async (req) => {
   }
 });
 
-state.rpc = rpc;
+memoryState.rpc = rpc;
 
 async function onInit(data) {
   try {
     // Prevent double initialization
-    if (state.initialized) {
-      log.w('[INIT] ⚠️ Already initialized, returning existing userId:', state.userId?.slice(0, 16));
-      return { success: true, userId: state.userId };
+    if (memoryState.initialized) {
+      log.w(
+        '[INIT] ⚠️ Already initialized, returning existing userId:',
+        persistedState.userId?.slice(0, 16)
+      );
+      return { success: true, userId: persistedState.userId };
     }
 
     log.i('[INIT] 🚀 Starting fresh initialization...');
@@ -109,7 +119,7 @@ async function onInit(data) {
     await initializeStorage(storagePath);
 
     // Generate/load keypair (simple deterministic store)
-    const pkCore = state.corestore.get({ name: 'keypair' });
+    const pkCore = memoryState.corestore.get({ name: 'keypair' });
     await pkCore.ready();
     let pub = await pkCore.getUserData('pub');
     let sec = await pkCore.getUserData('sec');
@@ -120,62 +130,76 @@ async function onInit(data) {
       await pkCore.setUserData('pub', pub);
       await pkCore.setUserData('sec', sec);
     }
-    state.userKeyPair = { publicKey: pub, secretKey: sec };
-    state.userId = b4a.toString(pub, 'hex');
+    persistedState.userKeyPair = { publicKey: pub, secretKey: sec };
+    persistedState.userId = b4a.toString(pub, 'hex');
 
     await loadMetadata();
     await initSwarm();
 
     // Always advertise/join our invite topic so others can find us
     log.i('[INIT] Joining own invite topic');
-    await joinInvite(state.userId);
+    await joinInvite(persistedState.userId);
 
-    // HYBRID APPROACH: Backend starts immediately, chats join in parallel background
-    const chatsList = Array.from(state.chats.values());
+    // HYBRID APPROACH: Backend starts immediately, peers/chats join in parallel background
+    const chatsList = Array.from(persistedState.chats.values());
     if (chatsList.length > 0) {
-      log.i(
-        `[INIT] Starting background join for ${chatsList.length} chat(s)...`
-      );
+      log.i(`[INIT] Starting background join for ${chatsList.length} chat(s)...`);
       setImmediate(() => {
-        log.i('[INIT-BG] Starting DHT lookup and hole punching for existing chats...');
-        const chatJoinPromises = chatsList.map(async (chat) => {
+        log.i(
+          '[INIT-BG] Starting DHT lookup and hole punching for existing chats...'
+        );
+        
+        // Join both invite topics (for discovery) AND chat topics (for communication)
+        const joinPromises = chatsList.map(async (chat) => {
           try {
+            // Join peer's invite topic first (primary discovery path)
+            log.i(`[INIT-BG] Joining invite topic for peer ${chat.peerId.slice(0, 8)}...`);
+            await Promise.race([
+              joinInvite(chat.peerId),
+              new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('invite timeout')), 3000)
+              ),
+            ]);
+            log.i(`[INIT-BG] ✓ Joined invite for peer ${chat.peerId.slice(0, 8)}`);
+
+            // Then join chat topic (for actual communication)
             log.i(`[INIT-BG] Joining chat topic for ${chat.id.slice(0, 16)}...`);
             await Promise.race([
               joinChat(chat.id),
               new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('timeout')), 5000)
+                setTimeout(() => reject(new Error('chat timeout')), 3000)
               ),
             ]);
             log.i(`[INIT-BG] ✓ Joined chat ${chat.id.slice(0, 16)}`);
           } catch (e) {
-            log.w(`[INIT-BG] ✗ Failed to join chat ${chat.id.slice(0, 16)}`);
+            log.w(`[INIT-BG] ✗ Failed to join chat ${chat.id.slice(0, 16)}: ${e.message}`);
           }
         });
-        Promise.allSettled(chatJoinPromises).then(() => {
+        
+        Promise.allSettled(joinPromises).then(() => {
           log.i('[INIT-BG] Background joins completed');
         });
       });
     }
 
-    state.initialized = true;
-    log.i('[INIT] ✅ Initialization complete! userId:', state.userId?.slice(0, 16));
-    return { success: true, userId: state.userId };
+    memoryState.initialized = true;
+    log.i('[INIT] ✅ Initialization complete! userId:', persistedState.userId?.slice(0, 16));
+    return { success: true, userId: persistedState.userId };
   } catch (e) {
     log.e('[INIT] ❌ Critical initialization error:', e);
-    state.initialized = false; // Reset on error
+    memoryState.initialized = false; // Reset on error
     return { success: false, error: String(e) };
   }
 }
 
 async function onSetProfile(data) {
-  state.profile = { ...state.profile, ...data };
+  persistedState.profile = { ...persistedState.profile, ...data };
   await saveMetadata();
-  return { success: true, profile: state.profile };
+  return { success: true, profile: persistedState.profile };
 }
 
 async function onGetProfile() {
-  return { success: true, profile: state.profile, userId: state.userId };
+  return { success: true, profile: persistedState.profile, userId: persistedState.userId };
 }
 
 async function onStartChatWithUser(data) {
@@ -220,16 +244,12 @@ async function onConnectByShareCode(data) {
 }
 
 async function onGetActiveChats() {
-  const chats = getAllChats().map((c) => ({
-    id: c.id,
-    peerId: c.peerId,
-    connected: c.connected,
-  }));
+  const chats = getAllChats();
   return { success: true, chats };
 }
 
 async function onGeneratePublicInvite() {
-  const shareCode = encodeShareCode(state.userKeyPair.publicKey);
+  const shareCode = encodeShareCode(persistedState.userKeyPair.publicKey);
   return { success: true, shareCode };
 }
 
@@ -239,7 +259,7 @@ async function onGetPeerStatus(data) {
 }
 
 async function onGetKnownPeers() {
-  const peers = Array.from(state.peers.values()).map((p) => ({
+  const peers = Array.from(persistedState.peers.values()).map((p) => ({
     userId: p.peerId,
     profile: p.profile || undefined,
     lastSeen: p.lastSeen || Date.now(),
@@ -250,24 +270,31 @@ async function onGetKnownPeers() {
 async function onResetAllData() {
   log.i('[RESET] Starting comprehensive data reset...');
   log.i('[RESET] Current state summary:');
-  log.i(`  - Peers: ${state.peers.size}`);
-  log.i(`  - Chats: ${state.chats.size}`);
-  log.i(`  - Invite discoveries: ${state.inviteDiscoveries.size}`);
-  log.i(`  - Storage path: ${state.storagePath}`);
+  log.i(`  - Peers: ${persistedState.peers.size}`);
+  log.i(`  - Chats: ${persistedState.chats.size}`);
+  log.i(`  - Invite discoveries: ${memoryState.inviteDiscoveries.size}`);
+  log.i(`  - Storage path: ${memoryState.storagePath}`);
 
   try {
     // 1. Close all swarm connections and leave topics
-    if (state.swarm) {
+    if (memoryState.swarm) {
       log.i('[RESET] Destroying swarm connections and discoveries...');
       // Close all active connections
-      for (const conn of state.swarm.connections) {
+      for (const conn of memoryState.swarm.connections) {
         try {
           conn.destroy();
         } catch {}
       }
 
       // Leave all invite topics
-      for (const discovery of state.inviteDiscoveries.values()) {
+      for (const discovery of memoryState.inviteDiscoveries.values()) {
+        try {
+          await discovery.destroy();
+        } catch {}
+      }
+
+      // Leave all chat topics
+      for (const discovery of memoryState.chatDiscoveries.values()) {
         try {
           await discovery.destroy();
         } catch {}
@@ -275,19 +302,19 @@ async function onResetAllData() {
 
       // Destroy swarm
       try {
-        await state.swarm.destroy();
+        await memoryState.swarm.destroy();
       } catch {}
-      state.swarm = null;
+      memoryState.swarm = null;
     }
 
     // 2. Clear all user data from corestore
-    if (state.localCore) {
+    if (memoryState.localCore) {
       log.i('[RESET] Clearing corestore user data...');
       try {
-        await state.localCore.setUserData('v2_peers', '[]');
-        await state.localCore.setUserData('v2_chats', '[]');
-        await state.localCore.setUserData('pub', null);
-        await state.localCore.setUserData('sec', null);
+        await memoryState.localCore.setUserData('v2_peers', '[]');
+        await memoryState.localCore.setUserData('v2_chats', '[]');
+        await memoryState.localCore.setUserData('pub', null);
+        await memoryState.localCore.setUserData('sec', null);
         log.i('[RESET] Corestore user data cleared successfully');
       } catch (e) {
         log.w('[RESET] Error clearing corestore user data:', e);
@@ -298,7 +325,7 @@ async function onResetAllData() {
     await closeStorage();
 
     // 4. Delete storage directory and all files
-    if (state.storagePath) {
+    if (memoryState.storagePath) {
       const fs = await import('bare-fs');
       const path = await import('bare-path');
 
@@ -319,26 +346,18 @@ async function onResetAllData() {
       };
 
       try {
-        deleteDir(state.storagePath);
+        deleteDir(memoryState.storagePath);
       } catch {}
     }
 
-    // 5. Clear all in-memory state
-    log.i('[RESET] Clearing in-memory state...');
-    clearState(); // This clears peers, chats, inviteDiscoveries
-    state.userId = null;
-    state.userKeyPair = null;
-    state.profile = {};
-    state.initialized = false;
-    state.storagePath = null;
-    state.corestore = null;
-    state.localCore = null;
-
-    // Double-check all maps are cleared
-    state.peers.clear();
-    state.chats.clear();
-    state.inviteDiscoveries.clear();
-    log.i('[RESET] In-memory state cleared successfully');
+    // 5. Clear all state (both persisted and memory)
+    log.i('[RESET] Clearing all state...');
+    clearAllState();
+    memoryState.initialized = false;
+    memoryState.storagePath = null;
+    memoryState.corestore = null;
+    memoryState.localCore = null;
+    log.i('[RESET] All state cleared successfully');
 
     return { success: true, message: 'All data reset successfully' };
   } catch (e) {
@@ -351,27 +370,33 @@ async function onDestroy() {
     log.i('[DESTROY] Starting graceful shutdown...');
 
     // 1. Close all swarm connections and discoveries
-    if (state.swarm) {
+    if (memoryState.swarm) {
       log.i('[DESTROY] Closing swarm connections...');
-      for (const conn of state.swarm.connections) {
+      for (const conn of memoryState.swarm.connections) {
         try {
           conn.destroy();
         } catch {}
       }
 
       // Close all invite discoveries
-      for (const discovery of state.inviteDiscoveries.values()) {
+      for (const discovery of memoryState.inviteDiscoveries.values()) {
         try {
           await discovery.destroy();
         } catch {}
       }
-      state.inviteDiscoveries.clear();
+
+      // Close all chat discoveries
+      for (const discovery of memoryState.chatDiscoveries.values()) {
+        try {
+          await discovery.destroy();
+        } catch {}
+      }
 
       // Destroy swarm
       try {
-        await state.swarm.destroy();
+        await memoryState.swarm.destroy();
       } catch {}
-      state.swarm = null;
+      memoryState.swarm = null;
       log.i('[DESTROY] Swarm closed');
     }
 
@@ -379,15 +404,14 @@ async function onDestroy() {
     log.i('[DESTROY] Closing storage...');
     await closeStorage();
 
-    // 3. Clear state
-    state.peers.clear();
-    state.chats.clear();
-    state.rpc = null;
-    state.initialized = false;
-    state.corestore = null;
-    state.localCore = null;
+    // 3. Clear memory state (keep persisted data for next restart)
+    clearMemoryState();
+    memoryState.rpc = null;
+    memoryState.initialized = false;
+    memoryState.corestore = null;
+    memoryState.localCore = null;
     // Don't clear storagePath - we'll reuse it on restart
-    // Don't clear userId/userKeyPair - they'll be loaded from storage on restart
+    // Don't clear persistedState - it will be loaded from storage on restart
 
     log.i('[DESTROY] ✅ Shutdown complete');
     return { success: true };

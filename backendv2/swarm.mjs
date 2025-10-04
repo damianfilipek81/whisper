@@ -4,9 +4,9 @@ import b4a from 'b4a';
 import Protomux from 'protomux';
 import c from 'compact-encoding';
 import { log } from './logger.mjs';
-import { state, getOrCreatePeer } from './state.mjs';
+import { persistedState, memoryState, getOrCreatePeer } from './state.mjs';
 import { registerConnection, unregisterConnection } from './peers.mjs';
-import { handleIncomingChannelData, ensureChat } from './chat.mjs';
+import { handleIncomingChannelData } from './chat.mjs';
 import { saveMetadata } from './storage.mjs';
 import { emitPeerConnected } from './events.mjs';
 
@@ -22,9 +22,9 @@ export function topicFromPeerId(peerIdHex) {
 }
 
 export async function initSwarm() {
-  if (state.swarm) return state.swarm;
-  state.swarm = new Hyperswarm();
-  state.swarm.on('connection', (conn, info) => {
+  if (memoryState.swarm) return memoryState.swarm;
+  memoryState.swarm = new Hyperswarm();
+  memoryState.swarm.on('connection', (conn, info) => {
     const remotePublicKey = info?.publicKey || conn.remotePublicKey;
     const candidateId = remotePublicKey
       ? b4a.toString(remotePublicKey, 'hex')
@@ -34,12 +34,31 @@ export async function initSwarm() {
 
     const mux = new Protomux(conn);
 
+    // Create chat channel FIRST (before control)
+    const chat = mux.createChannel({
+      protocol: 'whisper/chat/2',
+      onclose: () => {
+        log.i('[CHAT] close for', conn._remoteUserId || candidateId);
+        // Do not call unregisterConnection here to avoid duplicate disconnect events.
+        // Control channel close will handle unregistering the peer once.
+      },
+    });
+
+    const chatMessage = chat.addMessage({
+      encoding: c.raw,
+      onmessage: (buf) => {
+        if (!conn._remoteUserId) return;
+        log.i('[CHAT] message bytes len=', buf?.length, 'from', conn._remoteUserId);
+        handleIncomingChannelData(conn._remoteUserId, buf);
+      },
+    });
+
+    // Create control channel with handshake
     const control = mux.createChannel({
       protocol: 'whisper/control/2',
-      handshake: c.json, // Encoding schema - Protomux will encode/decode automatically
+      handshake: c.json,
       onopen: async (remoteHandshake) => {
         try {
-          // Protomux automatically decodes handshake using c.json
           log.i(
             '[CONTROL] Handshake complete with',
             remoteHandshake.userId,
@@ -50,11 +69,11 @@ export async function initSwarm() {
           conn._remoteUserId = remoteHandshake.userId;
 
           // Deduplicate using deterministic tie-breaking on TRANSPORT stream
-          const existingTransport = state.peerTransports.get(remoteHandshake.userId);
+          const existingTransport = memoryState.peerTransports.get(remoteHandshake.userId);
           if (existingTransport && existingTransport !== conn) {
             // Deterministic strategy: peer with LOWER userId keeps their OUTGOING connection
             // Peer with HIGHER userId accepts INCOMING connection
-            const shouldKeepNewConnection = state.userId > remoteHandshake.userId;
+            const shouldKeepNewConnection = persistedState.userId > remoteHandshake.userId;
 
             if (shouldKeepNewConnection) {
               log.i(
@@ -70,7 +89,7 @@ export async function initSwarm() {
                 log.w('[CONTROL] Failed to close old connection', e);
               }
               // Track new transport
-              state.peerTransports.set(remoteHandshake.userId, conn);
+              memoryState.peerTransports.set(remoteHandshake.userId, conn);
               // Continue with this new connection
             } else {
               log.i(
@@ -94,10 +113,7 @@ export async function initSwarm() {
             p.profile = remoteHandshake.profile;
             log.i('[CONTROL] Profile saved:', remoteHandshake.profile);
           } else {
-            log.w(
-              '[CONTROL] No profile in handshake from',
-              remoteHandshake.userId
-            );
+            log.w('[CONTROL] No profile in handshake from', remoteHandshake.userId);
           }
 
           // Save metadata to persist the profile
@@ -108,34 +124,24 @@ export async function initSwarm() {
             log.w('[CONTROL] Failed to save metadata', e);
           }
 
-          // Close invite discovery for this peer - we now use chat topic only
-          const inviteDiscovery = state.inviteDiscoveries.get(remoteHandshake.userId);
-          if (inviteDiscovery) {
-            log.i(
-              '[CONTROL] Closing invite discovery for',
-              remoteHandshake.userId.slice(0, 8)
-            );
-            try {
-              await inviteDiscovery.destroy();
-              state.inviteDiscoveries.delete(remoteHandshake.userId);
-            } catch {}
-          }
+          // DON'T close invite discovery - keep it open for auto-reconnect
+          // Invite topic serves as a backup discovery path
+          log.i(
+            '[CONTROL] Keeping invite discovery open for',
+            remoteHandshake.userId.slice(0, 8),
+            'as backup connection path'
+          );
 
-          // Register connection
+          // Register connection with chat writer
           const chatWriter = { write: (b) => chatMessage.send(b) };
           const chatId = await registerConnection(remoteHandshake.userId, chatWriter);
-          await ensureChat(remoteHandshake.userId);
-          if (!chat.opened) chat.open();
 
           // Ensure current transport is tracked
-          state.peerTransports.set(remoteHandshake.userId, conn);
+          memoryState.peerTransports.set(remoteHandshake.userId, conn);
 
           // Emit peer connected event with profile
           emitPeerConnected(remoteHandshake.userId, chatId, p.profile || {});
-          log.i(
-            '[CONTROL] RPC_PEER_CONNECTED emitted with profile:',
-            !!p.profile
-          );
+          log.i('[CONTROL] RPC_PEER_CONNECTED emitted with profile:', !!p.profile);
         } catch (e) {
           log.e('[CONTROL] Error in handshake handler:', e);
         }
@@ -149,45 +155,36 @@ export async function initSwarm() {
       },
     });
 
-    const chat = mux.createChannel({
-      protocol: 'whisper/chat/2',
-      onclose: () => {
-        log.i('[CHAT] close for', conn._remoteUserId || candidateId);
-        // Do not call unregisterConnection here to avoid duplicate disconnect events.
-        // Control channel close will handle unregistering the peer once.
-      },
-    });
-
-    const chatMessage = chat.addMessage({
-      encoding: c.raw,
-      onmessage: (buf) => {
-        if (!conn._remoteUserId) return;
-        log.i(
-          '[CHAT] message bytes len=',
-          buf?.length,
-          'from',
-          conn._remoteUserId
-        );
-        handleIncomingChannelData(conn._remoteUserId, buf);
-      },
-    });
-
     // Open control channel WITH our handshake data
     log.i('[CONTROL] Opening control channel, sending handshake...');
     control.open({
-      userId: state.userId,
-      profile: state.profile,
+      userId: persistedState.userId,
+      profile: persistedState.profile,
     });
-    // Chat channel will be opened after handshake completes in onopen handler
+
+    // Open chat channel immediately (both peers do this, no waiting)
+    log.i('[CHAT] Opening chat channel...');
+    chat.open();
   });
-  return state.swarm;
+  return memoryState.swarm;
 }
 
 export async function joinChat(chatId) {
-  const swarm = await initSwarm();
+  // Check if already joined - prevents duplicate joins and 500ms+ delays
+  const existing = memoryState.chatDiscoveries.get(chatId);
+  if (existing) {
+    log.i(`[SWARM] Already joined chat topic for ${chatId.slice(0, 16)}, skipping...`);
+    return existing;
+  }
+
+  if (!memoryState.swarm) throw new Error('Swarm not initialized - call onInit() first');
   const topic = topicFromChatId(chatId);
-  log.i(`[SWARM] Joining chat topic for ${chatId.slice(0, 16)}...`);
-  const discovery = swarm.join(topic, { client: true, server: true });
+  log.i(`[SWARM] Joining NEW chat topic for ${chatId.slice(0, 16)}...`);
+  const discovery = memoryState.swarm.join(topic, { client: true, server: true });
+  
+  // Store discovery BEFORE flushing to prevent race conditions
+  memoryState.chatDiscoveries.set(chatId, discovery);
+  
   log.i(`[SWARM] Waiting for DHT announce/lookup to complete...`);
   await discovery.flushed();
   log.i(`[SWARM] Chat topic joined, listening for connections...`);
@@ -195,13 +192,20 @@ export async function joinChat(chatId) {
 }
 
 export async function joinInvite(peerIdHex) {
-  const swarm = await initSwarm();
+  // Check if already joined
+  const existing = memoryState.inviteDiscoveries.get(peerIdHex);
+  if (existing) {
+    log.i(`[SWARM] Already joined invite topic for ${peerIdHex.slice(0, 8)}, skipping...`);
+    return existing;
+  }
+
+  if (!memoryState.swarm) throw new Error('Swarm not initialized - call onInit() first');
   const topic = topicFromPeerId(peerIdHex);
   log.i(`[SWARM] Joining invite topic for peer ${peerIdHex.slice(0, 8)}...`);
-  const discovery = swarm.join(topic, { client: true, server: true });
+  const discovery = memoryState.swarm.join(topic, { client: true, server: true });
   log.i(`[SWARM] Waiting for invite DHT announce/lookup to complete...`);
   await discovery.flushed();
   log.i(`[SWARM] Invite topic joined, peer discovery active...`);
-  state.inviteDiscoveries.set(peerIdHex, discovery);
+  memoryState.inviteDiscoveries.set(peerIdHex, discovery);
   return discovery;
 }

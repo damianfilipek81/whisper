@@ -1,7 +1,6 @@
-import b4a from 'b4a';
 import { log } from './logger.mjs';
 
-import { state, getOrCreateChat } from './state.mjs';
+import { persistedState, getOrCreateChat, getActiveConnection } from './state.mjs';
 import { joinChat } from './swarm.mjs';
 import { deriveChatIdForPeer } from './peers.mjs';
 import { emitMessageReceived } from './events.mjs';
@@ -15,13 +14,13 @@ export async function ensureChat(peerIdHex) {
 }
 
 export async function sendChatMessage(chatId, text, type = 'text', metadata = {}) {
-  const chat = state.chats.get(chatId);
+  const chat = persistedState.chats.get(chatId);
   if (!chat) throw new Error('chat not found');
 
   const message = {
     id: `${Date.now()}:${Math.random().toString(36).slice(2)}`,
     chatId,
-    senderId: state.userId,
+    senderId: persistedState.userId,
     type,
     text,
     timestamp: Date.now(),
@@ -34,6 +33,7 @@ export async function sendChatMessage(chatId, text, type = 'text', metadata = {}
   try {
     await saveMetadataDebounced();
   } catch {}
+  
   // Emit event locally so sender UI updates immediately
   try {
     emitMessageReceived(message, chatId);
@@ -43,11 +43,10 @@ export async function sendChatMessage(chatId, text, type = 'text', metadata = {}
   log.i('[CHAT] send local append', message.id, 'to', chat.peerId);
 
   // send over active connection if available
-  const peer = state.peers.get(chat.peerId);
-  const channel = peer?.conn;
-  if (channel) {
+  const activeConn = getActiveConnection(chat.peerId);
+  if (activeConn?.chatWriter) {
     try {
-      channel.write(Buffer.from(JSON.stringify({ t: 'msg', message })));
+      activeConn.chatWriter.write(Buffer.from(JSON.stringify({ t: 'msg', message })));
       message.status = 'sent';
       log.i('[CHAT] send bytes ok for', message.id);
     } catch (err) {
@@ -89,7 +88,7 @@ export async function handleIncomingChannelData(peerIdHex, data) {
 }
 
 export async function getChatMessages(chatId, limit = 50) {
-  const chat = state.chats.get(chatId);
+  const chat = persistedState.chats.get(chatId);
   if (!chat) return [];
   const start = Math.max(0, chat.messages.length - limit);
   return chat.messages.slice(start);
