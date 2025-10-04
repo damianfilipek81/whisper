@@ -4,7 +4,7 @@ import b4a from 'b4a';
 import { Buffer } from 'buffer';
 import { Paths } from 'expo-file-system';
 import { convertToString, parseRPCData } from '@/utils/rpcUtils';
-// @ts-ignore - bundle file is generated and doesn't have type definitions
+// @ts-ignore
 import bundle from '@/../backend/build/app.bundle.mjs';
 import {
   RPC_INIT,
@@ -27,7 +27,6 @@ import {
   RPC_GET_KNOWN_PEERS,
 } from '@/../shared/constants';
 
-// Types for service events
 export interface PearsServiceEvents {
   onPeerConnected?: (peerId: string) => void;
   onPeerDisconnected?: (peerId: string, error?: string) => void;
@@ -43,9 +42,6 @@ export class PearsService {
   private isInitializing = false;
   private currentUserId: string | null = null;
 
-  // Removed local connection cache - using backend status only
-
-  // Event callbacks
   public onPeerConnected?: (peerId: string) => void;
   public onPeerDisconnected?: (peerId: string, error?: string) => void;
   public onPeerConnecting?: (peerId: string) => void;
@@ -72,12 +68,10 @@ export class PearsService {
     try {
       console.log('🚀 Starting pearsService initialization...');
 
-      // If there's an old worklet (from Fast Refresh), terminate it first
       if (this.worklet) {
         console.log('🧹 Cleaning up old worklet before starting new one...');
         try {
           this.worklet.terminate();
-          // Give backend time to cleanup before starting new worklet
           await new Promise((resolve) => setTimeout(resolve, 150));
         } catch (error) {
           console.warn('⚠️ Error terminating old worklet:', error);
@@ -96,7 +90,6 @@ export class PearsService {
         this.handleBackendEvent(req);
       });
 
-      // Backend will generate/load keypair from its storage
       const initResponse = await this.sendRPCCommand(RPC_INIT, {
         storagePath: documentsPath,
       });
@@ -128,11 +121,9 @@ export class PearsService {
     console.log('🔍 Sending RPC command:', command, 'with payload:', payload);
     req.send(b4a.from(payload, 'utf8') as any);
 
-    // Wait for response
     const response = await req.reply();
     if (!response) throw new Error('No response from backend');
 
-    // Handle Buffer/Uint8Array properly using utility
     const responseStr = convertToString(response);
     return JSON.parse(responseStr);
   }
@@ -145,13 +136,6 @@ export class PearsService {
     return this.currentUserId;
   }
 
-  // ============================================================================
-  // PEER CONNECTION STATE (Backend-driven only)
-  // ============================================================================
-
-  /**
-   * Get connection status for peer from backend
-   */
   async getPeerConnectionStatus(
     peerId: string
   ): Promise<'connected' | 'disconnected'> {
@@ -166,24 +150,17 @@ export class PearsService {
     }
   }
 
-  /**
-   * Check if specific peer is connected (async, from backend)
-   */
   async isPeerConnected(peerId: string): Promise<boolean> {
     const status = await this.getPeerConnectionStatus(peerId);
     return status === 'connected';
   }
 
-  /**
-   * Connect to a specific peer on-demand
-   */
   async connectToPeer(
     peerId: string
   ): Promise<{ success: boolean; chatId?: string; error?: string }> {
     console.log(`🔌 Attempting to connect to peer: ${peerId}`);
 
     try {
-      // Try to start chat (this will attempt connection)
       const response = await this.startChatWithUser(peerId);
       console.log(`✅ Chat created with peer ${peerId}, chat ID: ${response.chatId}`);
 
@@ -205,7 +182,6 @@ export class PearsService {
         typeof req.data
       );
 
-      // Use utility to properly convert data
       const eventData = req.data ? parseRPCData(req.data) : {};
       console.log('🔍 Parsed event data:', eventData);
 
@@ -256,10 +232,6 @@ export class PearsService {
       console.error('Failed to handle backend event:', error);
     }
   }
-
-  // ============================================================================
-  // HIGH-LEVEL API METHODS
-  // ============================================================================
 
   async setUserProfile(profile: {
     name: string;
@@ -358,7 +330,6 @@ export class PearsService {
         throw new Error(`Backend reset failed: ${backendResult.error}`);
       }
 
-      // 2. Destroy current service instance
       console.log('🗑️ [RESET] Destroying service instance...');
       await this.destroy();
 
@@ -378,7 +349,6 @@ export class PearsService {
 
     if (this.worklet) {
       try {
-        // Tell backend to cleanup
         await this.sendRPCCommand(RPC_DESTROY);
       } catch (error) {
         console.warn('⚠️ Error during RPC destroy:', error);
@@ -386,7 +356,6 @@ export class PearsService {
 
       try {
         this.worklet.terminate();
-        // Give time for cleanup
         await new Promise((resolve) => setTimeout(resolve, 150));
       } catch (error) {
         console.warn('⚠️ Error terminating worklet:', error);

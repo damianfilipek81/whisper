@@ -45,11 +45,10 @@ export const useVoiceMessage = ({
       try {
         console.log('🟢 processVoiceMessage starting');
         setIsProcessing(true);
-        const duration = audioData.length / 16000; // 16kHz sample rate
+        const duration = audioData.length / 16000;
         let transcription: string | undefined;
         let translation: string | undefined;
 
-        // Transcribe in selected language if enabled
         if (settings.autoTranscribe) {
           const transcriptionResult = await model.transcribe(audioData, {
             language: settings.spokenLanguage as SpeechToTextLanguage,
@@ -57,7 +56,6 @@ export const useVoiceMessage = ({
           transcription = transcriptionResult || undefined;
         }
 
-        // Translate to English if enabled and language is not English
         if (settings.autoTranslateToEnglish && settings.spokenLanguage !== 'en') {
           const translationResult = await model.transcribe(audioData, {
             language: 'en',

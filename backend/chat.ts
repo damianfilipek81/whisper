@@ -30,10 +30,9 @@ export async function sendChatMessage(
     text,
     timestamp: Date.now(),
     status: 'pending',
-    ...metadata, // Include voice message metadata (audioData, transcription, etc.)
+    ...metadata,
   };
 
-  // persist locally
   chat.messages.push(message);
   try {
     await saveMetadataDebounced();
@@ -41,7 +40,6 @@ export async function sendChatMessage(
     log.w('[CHAT] Failed to save metadata:', error);
   }
 
-  // Emit event locally so sender UI updates immediately
   try {
     emitMessageReceived(message, chatId);
   } catch (error) {
@@ -49,7 +47,6 @@ export async function sendChatMessage(
   }
   log.i('[CHAT] send local append', message.id, 'to', chat.peerId);
 
-  // send over active connection if available
   const activeConn = getActiveConnection(chat.peerId);
   if (activeConn?.chatWriter) {
     try {
@@ -81,7 +78,6 @@ export async function handleIncomingChannelData(
       const chatId = m.chatId || deriveChatIdForPeer(peerIdHex);
       const chat = getOrCreateChat(chatId, peerIdHex);
 
-      // Check for duplicate (idempotency)
       const isDuplicate = chat.messages.some((existing) => existing.id === m.id);
       if (!isDuplicate) {
         chat.messages.push(m);

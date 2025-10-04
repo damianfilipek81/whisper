@@ -71,7 +71,7 @@ export const useAudioRecording = ({
 
       if (!audioRecorderRef.current) {
         audioRecorderRef.current = new AudioRecorder({
-          sampleRate: 16000, // Whisper requires 16kHz
+          sampleRate: 16000,
           bufferLengthInSamples: 1600,
         });
 
@@ -158,10 +158,8 @@ export const useAudioRecording = ({
 
       setAudioData(new Uint8Array(BAR_COUNT).fill(0));
 
-      // Wait to collect final chunks
       await new Promise((resolve) => setTimeout(resolve, 200));
 
-      // Combine all audio chunks
       const chunks = audioChunksRef.current;
       console.log('📊 Audio chunks collected:', chunks.length);
 

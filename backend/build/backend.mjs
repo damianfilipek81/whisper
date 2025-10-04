@@ -41,7 +41,6 @@ var RPC_PEER_DISCONNECTED = 101;
 var RPC_MESSAGE_RECEIVED = 102;
 var RPC_PEER_CONNECTING = 103;
 var RPC_ERROR = 104;
-var INVITE_EXPIRATION_MS = 5 * 60 * 1e3;
 
 // backend/state.ts
 var persistedState = {
@@ -52,18 +51,14 @@ var persistedState = {
   chats: /* @__PURE__ */ new Map()
 };
 var memoryState = {
-  // Infrastructure
   rpc: null,
   corestore: null,
   localCore: null,
   swarm: null,
-  // Runtime flags
   initialized: false,
   storagePath: null,
-  // Active DHT discoveries (need references for cleanup)
   inviteDiscoveries: /* @__PURE__ */ new Map(),
   chatDiscoveries: /* @__PURE__ */ new Map(),
-  // Active connections (ephemeral)
   peerTransports: /* @__PURE__ */ new Map(),
   activeConnections: /* @__PURE__ */ new Map()
 };
@@ -105,10 +100,14 @@ function getOrCreatePeer(peerId) {
   return peer;
 }
 function getAllChats() {
-  return Array.from(persistedState.chats.values()).map((chat) => ({
-    ...chat,
-    connected: memoryState.activeConnections.has(chat.peerId)
-  }));
+  return Array.from(persistedState.chats.values()).map((chat) => {
+    const peer = persistedState.peers.get(chat.peerId);
+    return {
+      ...chat,
+      peerConnected: memoryState.activeConnections.has(chat.peerId),
+      peerProfile: peer?.profile
+    };
+  });
 }
 function registerActiveConnection(peerId, chatWriter, transport) {
   memoryState.activeConnections.set(peerId, {
@@ -299,7 +298,6 @@ async function sendChatMessage(chatId, text, type = "text", metadata = {}) {
     timestamp: Date.now(),
     status: "pending",
     ...metadata
-    // Include voice message metadata (audioData, transcription, etc.)
   };
   chat.messages.push(message);
   try {
@@ -624,14 +622,10 @@ async function onInit(data) {
     if (chatsList.length > 0) {
       log.i(`[INIT] Starting background join for ${chatsList.length} chat(s)...`);
       setImmediate(() => {
-        log.i(
-          "[INIT-BG] Starting DHT lookup and hole punching for existing chats..."
-        );
+        log.i("[INIT-BG] Starting DHT lookup and hole punching for existing chats...");
         const joinPromises = chatsList.map(async (chat) => {
           try {
-            log.i(
-              `[INIT-BG] Joining invite topic for peer ${chat.peerId.slice(0, 8)}...`
-            );
+            log.i(`[INIT-BG] Joining invite topic for peer ${chat.peerId.slice(0, 8)}...`);
             await Promise.race([
               joinInvite(chat.peerId),
               new Promise(
@@ -648,9 +642,7 @@ async function onInit(data) {
             ]);
             log.i(`[INIT-BG] \u2713 Joined chat ${chat.id.slice(0, 16)}`);
           } catch (e) {
-            log.w(
-              `[INIT-BG] \u2717 Failed to join chat ${chat.id.slice(0, 16)}: ${e.message}`
-            );
+            log.w(`[INIT-BG] \u2717 Failed to join chat ${chat.id.slice(0, 16)}: ${e.message}`);
           }
         });
         Promise.allSettled(joinPromises).then(() => {
@@ -659,10 +651,7 @@ async function onInit(data) {
       });
     }
     memoryState.initialized = true;
-    log.i(
-      "[INIT] \u2705 Initialization complete! userId:",
-      persistedState.userId?.slice(0, 16)
-    );
+    log.i("[INIT] \u2705 Initialization complete! userId:", persistedState.userId?.slice(0, 16));
     return { success: true, userId: persistedState.userId };
   } catch (e) {
     log.e("[INIT] \u274C Critical initialization error:", e);

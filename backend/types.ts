@@ -7,49 +7,17 @@ import type Corestore from 'corestore';
 import type RPC from 'bare-rpc';
 import type { Discovery } from 'hyperswarm';
 
+// Import shared types that are common between frontend and backend
+import type { UserProfile, Peer, Message, Chat, ChatWithStatus } from '../shared/types.js';
+
 // Re-export for convenience
 export type { Discovery };
+// Re-export shared types for backward compatibility
+export type { UserProfile, Peer, Message, Chat, ChatWithStatus };
 
 export interface UserKeyPair {
   publicKey: Buffer;
   secretKey: Buffer;
-}
-
-export interface UserProfile {
-  name?: string;
-  createdAt?: number;
-  [key: string]: any;
-}
-
-export interface Peer {
-  peerId: string;
-  lastSeen: number;
-  profile?: UserProfile;
-}
-
-export interface Message {
-  id: string;
-  chatId: string;
-  senderId: string;
-  type: 'text' | 'voice';
-  text: string;
-  timestamp: number;
-  status: 'pending' | 'sent' | 'delivered';
-  // Voice message metadata (optional)
-  audioData?: string;
-  transcription?: string;
-  duration?: number;
-  [key: string]: any;
-}
-
-export interface Chat {
-  id: string;
-  peerId: string;
-  messages: Message[];
-}
-
-export interface ChatWithStatus extends Chat {
-  connected: boolean;
 }
 
 export interface ActiveConnection {

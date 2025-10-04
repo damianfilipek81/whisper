@@ -27,17 +27,14 @@ export async function registerConnection(
   peerIdHex: string,
   chatWriter: ChatWriter
 ): Promise<string> {
-  // Update persisted peer metadata
   const peer = getOrCreatePeer(peerIdHex);
   peer.lastSeen = Date.now();
 
   log.i('[PEERS] registerConnection for', peerIdHex);
 
-  // Get/create chat
   const chatId = deriveChatIdForPeer(peerIdHex);
   const chat = getOrCreateChat(chatId, peerIdHex);
 
-  // Register active connection in memory
   const transport = memoryState.peerTransports.get(peerIdHex);
   registerActiveConnection(peerIdHex, chatWriter, transport);
 
@@ -45,13 +42,9 @@ export async function registerConnection(
 }
 
 export function unregisterConnection(peerIdHex: string, error?: string | null): void {
-  // Remove from memory
   unregisterActiveConnection(peerIdHex);
   memoryState.peerTransports.delete(peerIdHex);
-
   log.i('[PEERS] unregisterConnection for', peerIdHex);
-
-  // Emit disconnect event
   emitPeerDisconnected(peerIdHex, error || null);
 }
 

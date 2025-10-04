@@ -22,10 +22,7 @@ export async function closeStorage(): Promise<void> {
 export async function saveMetadata(): Promise<void> {
   if (!memoryState.localCore) return;
 
-  // Save peers (persisted metadata only - no connection state)
   const peers = JSON.stringify(Array.from(persistedState.peers.values()));
-
-  // Save chats (messages only - no connected status)
   const chats = JSON.stringify(
     Array.from(persistedState.chats.values()).map((c) => ({
       id: c.id,
@@ -33,8 +30,6 @@ export async function saveMetadata(): Promise<void> {
       messages: c.messages,
     }))
   );
-
-  // Save profile
   const profile = JSON.stringify(persistedState.profile || {});
 
   await memoryState.localCore.setUserData('v2_peers', peers);
@@ -98,7 +93,6 @@ export async function loadMetadata(): Promise<void> {
       )} total messages`
     );
     for (const c of chats) {
-      // Note: connected status is NOT persisted - it's always false on load
       persistedState.chats.set(c.id, c);
     }
   }

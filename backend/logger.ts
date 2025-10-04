@@ -1,7 +1,3 @@
-/**
- * Logger utility with timestamps for backend
- */
-
 function formatTimestamp(): string {
   const now = new Date();
   const hours = String(now.getHours()).padStart(2, '0');

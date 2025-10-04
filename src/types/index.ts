@@ -7,10 +7,9 @@ export interface PeerMessage {
   language: string;
   timestamp: number;
   type: 'text' | 'audio' | 'transcription' | 'voice';
-  // Voice message specific fields
-  audioData?: number[]; // Serialized Float32Array
-  audioDuration?: number; // in seconds
-  audioSampleRate?: number; // typically 16000 for Whisper
+  audioData?: number[];
+  audioDuration?: number;
+  audioSampleRate?: number;
   transcription?: string;
   transcriptionLanguage?: string;
   translation?: string;
@@ -27,14 +26,13 @@ export interface Conversation {
   chatId: string;
   peer: PeerConnection;
   lastMessage?: PeerMessage;
-  unreadCount: number;
   lastActivity: number;
 }
 
 export interface ChatScreenProps {
   peer: PeerConnection;
   chatId: string;
-  messages?: PeerMessage[]; // Optional since we load from backend
+  messages?: PeerMessage[];
 }
 
 export interface PeerConnection {
@@ -46,7 +44,7 @@ export interface PeerConnection {
 
 export interface VoiceMessage {
   id: string;
-  audioData: Float32Array; // Raw audio waveform
+  audioData: Float32Array;
   duration: number;
   sampleRate: number;
   transcription?: string;
@@ -55,24 +53,14 @@ export interface VoiceMessage {
   isProcessing: boolean;
   timestamp: number;
 }
+export type {
+  UserProfile,
+  Peer,
+  Message,
+  Chat,
+  ChatWithStatus,
+  MessageType,
+  MessageStatus,
+} from '../../shared/types';
 
-// Backend data types
-export interface BackendPeer {
-  userId: string;
-  profile?: {
-    name?: string;
-  };
-  lastSeen: number;
-}
-
-export interface BackendChat {
-  id: string;
-  peerId: string;
-  connected: boolean;
-  lastMessage?: PeerMessage;
-  unreadCount?: number;
-  lastActivity?: number;
-}
-
-// Re-export QR types for easier access
 export * from './qr.types';

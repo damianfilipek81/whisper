@@ -1,18 +1,8 @@
-/**
- * Format timestamp to time string in HH:MM format
- * @param timestamp - Unix timestamp in milliseconds
- * @returns Formatted time string (e.g., "14:30")
- */
 export const formatTime = (timestamp: number): string => {
   const date = new Date(timestamp);
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 };
 
-/**
- * Format timestamp to date string
- * @param timestamp - Unix timestamp in milliseconds
- * @returns Formatted date string (e.g., "Jan 15, 2024")
- */
 export const formatDate = (timestamp: number): string => {
   const date = new Date(timestamp);
   return date.toLocaleDateString([], {
@@ -22,11 +12,6 @@ export const formatDate = (timestamp: number): string => {
   });
 };
 
-/**
- * Format timestamp to relative time (e.g., "2 minutes ago")
- * @param timestamp - Unix timestamp in milliseconds
- * @returns Relative time string
- */
 export const formatRelativeTime = (timestamp: number): string => {
   const now = Date.now();
   const diff = now - timestamp;
@@ -43,11 +28,6 @@ export const formatRelativeTime = (timestamp: number): string => {
   return formatDate(timestamp);
 };
 
-/**
- * Check if timestamp is today
- * @param timestamp - Unix timestamp in milliseconds
- * @returns True if timestamp is today
- */
 export const isToday = (timestamp: number): boolean => {
   const date = new Date(timestamp);
   const today = new Date();
@@ -59,11 +39,6 @@ export const isToday = (timestamp: number): boolean => {
   );
 };
 
-/**
- * Check if timestamp is yesterday
- * @param timestamp - Unix timestamp in milliseconds
- * @returns True if timestamp is yesterday
- */
 export const isYesterday = (timestamp: number): boolean => {
   const date = new Date(timestamp);
   const yesterday = new Date();
@@ -76,11 +51,6 @@ export const isYesterday = (timestamp: number): boolean => {
   );
 };
 
-/**
- * Format recording duration in seconds to MM:SS format
- * @param seconds - Duration in seconds
- * @returns Formatted time string (e.g., "1:23")
- */
 export const formatRecordingTime = (seconds: number): string => {
   const mins = Math.floor(seconds / 60);
   const secs = seconds % 60;

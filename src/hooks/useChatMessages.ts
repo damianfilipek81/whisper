@@ -6,7 +6,7 @@ interface UseChatMessagesProps {
   chatId: string;
   peerId: string;
   currentUserId: string;
-  isBackendReady?: boolean; // Optional for backward compatibility
+  isBackendReady?: boolean;
 }
 
 interface SendMessageOptions {
@@ -79,13 +79,11 @@ export const useChatMessages = ({
       }
     };
 
-    // Wait for backend to be ready before loading messages
     if (isBackendReady && chatId) {
       loadMessages();
     }
-  }, [chatId, currentUserId, peerId, isBackendReady]);
+    }, [chatId, currentUserId, peerId, isBackendReady]);
 
-  // Listen for new messages
   useEffect(() => {
     const originalHandler = pearsService.onMessageReceived;
 
@@ -120,7 +118,6 @@ export const useChatMessages = ({
             language: 'en',
             timestamp: message.timestamp,
             type: message.type as 'text' | 'audio' | 'transcription' | 'voice',
-            // Voice message specific fields
             audioData: message.audioData,
             audioDuration: message.audioDuration,
             audioSampleRate: message.audioSampleRate,
@@ -153,12 +150,11 @@ export const useChatMessages = ({
         if (response.success) {
           console.log(`${type} message sent successfully:`, response.messageId);
         } else {
-          console.error('Failed to send message');
           throw new Error('Failed to send message');
         }
       } catch (error) {
         console.error('Error sending message:', error);
-        throw error; // Re-throw so caller can handle it
+        throw error;
       }
     },
     [chatId]

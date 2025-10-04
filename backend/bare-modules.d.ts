@@ -1,10 +1,3 @@
-/**
- * Type declarations for Bare/Holepunch modules
- * Based on actual library implementations
- *
- * Note: bare-rpc and bare-fs already have official .d.ts files
- */
-
 declare module 'hypercore-crypto' {
   export interface KeyPair {
     publicKey: Buffer;
@@ -31,7 +24,6 @@ declare module 'hypercore-crypto' {
 }
 
 declare module 'corestore' {
-  // Based on node_modules/corestore/index.js implementation
   export interface Hypercore {
     ready(): Promise<void>;
     getUserData(key: string): Promise<Buffer | null>;
@@ -82,7 +74,6 @@ declare module 'corestore' {
 declare module 'hyperswarm' {
   import { EventEmitter } from 'events';
 
-  // Based on node_modules/hyperswarm/index.js implementation
   export interface PeerInfo {
     publicKey: Buffer;
     topics?: Buffer[];
@@ -153,7 +144,6 @@ declare module 'hyperswarm' {
 }
 
 declare module 'protomux' {
-  // Based on node_modules/protomux/index.js implementation
   export interface Channel {
     open(handshake?: any): void;
     close(): void;
@@ -193,7 +183,6 @@ declare module 'protomux' {
 }
 
 declare module 'compact-encoding' {
-  // Based on node_modules/compact-encoding/index.js implementation
   export interface State {
     start: number;
     end: number;
@@ -250,7 +239,6 @@ declare module 'compact-encoding' {
 }
 
 declare module 'b4a' {
-  // Based on node_modules/b4a/index.js implementation
   export function isBuffer(value: any): boolean;
   export function isEncoding(encoding: string): boolean;
   export function alloc(
@@ -320,10 +308,7 @@ declare module 'b4a' {
   ): number;
 }
 
-// bare-fs has official types in index.d.ts - no need to declare here
-
 declare module 'bare-path' {
-  // Based on Node.js path module (bare-path exports either win32 or posix)
   export const sep: string;
   export const delimiter: string;
   export function normalize(path: string): string;

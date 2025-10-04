@@ -109,7 +109,6 @@ memoryState.rpc = rpc;
 
 async function onInit(data: RPCRequestData): Promise<RPCResponse> {
   try {
-    // Prevent double initialization
     if (memoryState.initialized) {
       log.w(
         '[INIT] ⚠️ Already initialized, returning existing userId:',
@@ -123,7 +122,6 @@ async function onInit(data: RPCRequestData): Promise<RPCResponse> {
     log.i('[INIT] Storage path:', storagePath);
     await initializeStorage(storagePath);
 
-    // Generate/load keypair (simple deterministic store)
     const pkCore = memoryState.corestore!.get({ name: 'keypair' });
     await pkCore.ready();
     let pub = await pkCore.getUserData('pub');
@@ -141,26 +139,19 @@ async function onInit(data: RPCRequestData): Promise<RPCResponse> {
     await loadMetadata();
     await initSwarm();
 
-    // Always advertise/join our invite topic so others can find us
     log.i('[INIT] Joining own invite topic');
     await joinInvite(persistedState.userId);
 
-    // HYBRID APPROACH: Backend starts immediately, peers/chats join in parallel background
+    // Backend starts immediately, existing chats join in background to avoid blocking
     const chatsList = Array.from(persistedState.chats.values());
     if (chatsList.length > 0) {
       log.i(`[INIT] Starting background join for ${chatsList.length} chat(s)...`);
       setImmediate(() => {
-        log.i(
-          '[INIT-BG] Starting DHT lookup and hole punching for existing chats...'
-        );
+        log.i('[INIT-BG] Starting DHT lookup and hole punching for existing chats...');
 
-        // Join both invite topics (for discovery) AND chat topics (for communication)
         const joinPromises = chatsList.map(async (chat) => {
           try {
-            // Join peer's invite topic first (primary discovery path)
-            log.i(
-              `[INIT-BG] Joining invite topic for peer ${chat.peerId.slice(0, 8)}...`
-            );
+            log.i(`[INIT-BG] Joining invite topic for peer ${chat.peerId.slice(0, 8)}...`);
             await Promise.race([
               joinInvite(chat.peerId),
               new Promise((_, reject) =>
@@ -169,7 +160,6 @@ async function onInit(data: RPCRequestData): Promise<RPCResponse> {
             ]);
             log.i(`[INIT-BG] ✓ Joined invite for peer ${chat.peerId.slice(0, 8)}`);
 
-            // Then join chat topic (for actual communication)
             log.i(`[INIT-BG] Joining chat topic for ${chat.id.slice(0, 16)}...`);
             await Promise.race([
               joinChat(chat.id),
@@ -179,9 +169,7 @@ async function onInit(data: RPCRequestData): Promise<RPCResponse> {
             ]);
             log.i(`[INIT-BG] ✓ Joined chat ${chat.id.slice(0, 16)}`);
           } catch (e: any) {
-            log.w(
-              `[INIT-BG] ✗ Failed to join chat ${chat.id.slice(0, 16)}: ${e.message}`
-            );
+            log.w(`[INIT-BG] ✗ Failed to join chat ${chat.id.slice(0, 16)}: ${e.message}`);
           }
         });
 
@@ -192,14 +180,11 @@ async function onInit(data: RPCRequestData): Promise<RPCResponse> {
     }
 
     memoryState.initialized = true;
-    log.i(
-      '[INIT] ✅ Initialization complete! userId:',
-      persistedState.userId?.slice(0, 16)
-    );
+    log.i('[INIT] ✅ Initialization complete! userId:', persistedState.userId?.slice(0, 16));
     return { success: true, userId: persistedState.userId };
   } catch (e) {
     log.e('[INIT] ❌ Critical initialization error:', e);
-    memoryState.initialized = false; // Reset on error
+    memoryState.initialized = false;
     return { success: false, error: String(e) };
   }
 }
@@ -251,7 +236,6 @@ async function onConnectByShareCode(data: RPCRequestData): Promise<RPCResponse> 
   const targetPubKey = decodeShareCode(shareCode);
   const peerId = b4a.toString(targetPubKey, 'hex');
   const chatId = deriveChatIdForPeer(peerId);
-  // Join their invite topic to find them and also the chat topic
   log.i('[RPC] connectByShareCode peerId=', peerId, 'chatId=', chatId);
   await joinInvite(peerId);
   await joinChat(chatId);
@@ -295,38 +279,32 @@ async function onResetAllData(): Promise<RPCResponse> {
   log.i(`  - Storage path: ${memoryState.storagePath}`);
 
   try {
-    // 1. Close all swarm connections and leave topics
     if (memoryState.swarm) {
       log.i('[RESET] Destroying swarm connections and discoveries...');
-      // Close all active connections
       for (const conn of memoryState.swarm.connections) {
         try {
           conn.destroy();
         } catch {}
       }
 
-      // Leave all invite topics
       for (const discovery of memoryState.inviteDiscoveries.values()) {
         try {
           await discovery.destroy();
         } catch {}
       }
 
-      // Leave all chat topics
       for (const discovery of memoryState.chatDiscoveries.values()) {
         try {
           await discovery.destroy();
         } catch {}
       }
 
-      // Destroy swarm
       try {
         await memoryState.swarm.destroy();
       } catch {}
       memoryState.swarm = null;
     }
 
-    // 2. Clear all user data from corestore
     if (memoryState.localCore) {
       log.i('[RESET] Clearing corestore user data...');
       try {
@@ -340,10 +318,8 @@ async function onResetAllData(): Promise<RPCResponse> {
       }
     }
 
-    // 3. Close storage
     await closeStorage();
 
-    // 4. Delete storage directory and all files
     if (memoryState.storagePath) {
       // @ts-ignore - bare-fs modules
       const fs = await import('bare-fs');
@@ -371,7 +347,6 @@ async function onResetAllData(): Promise<RPCResponse> {
       } catch {}
     }
 
-    // 5. Clear all state (both persisted and memory)
     log.i('[RESET] Clearing all state...');
     clearAllState();
     memoryState.initialized = false;
@@ -390,7 +365,6 @@ async function onDestroy(): Promise<RPCResponse> {
   try {
     log.i('[DESTROY] Starting graceful shutdown...');
 
-    // 1. Close all swarm connections and discoveries
     if (memoryState.swarm) {
       log.i('[DESTROY] Closing swarm connections...');
       for (const conn of memoryState.swarm.connections) {
@@ -399,21 +373,18 @@ async function onDestroy(): Promise<RPCResponse> {
         } catch {}
       }
 
-      // Close all invite discoveries
       for (const discovery of memoryState.inviteDiscoveries.values()) {
         try {
           await discovery.destroy();
         } catch {}
       }
 
-      // Close all chat discoveries
       for (const discovery of memoryState.chatDiscoveries.values()) {
         try {
           await discovery.destroy();
         } catch {}
       }
 
-      // Destroy swarm
       try {
         await memoryState.swarm.destroy();
       } catch {}
@@ -421,18 +392,15 @@ async function onDestroy(): Promise<RPCResponse> {
       log.i('[DESTROY] Swarm closed');
     }
 
-    // 2. Close storage
     log.i('[DESTROY] Closing storage...');
     await closeStorage();
 
-    // 3. Clear memory state (keep persisted data for next restart)
+    // Keep persisted data for next restart
     clearMemoryState();
     memoryState.rpc = null;
     memoryState.initialized = false;
     memoryState.corestore = null;
     memoryState.localCore = null;
-    // Don't clear storagePath - we'll reuse it on restart
-    // Don't clear persistedState - it will be loaded from storage on restart
 
     log.i('[DESTROY] ✅ Shutdown complete');
     return { success: true };

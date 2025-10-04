@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { Conversation, PeerConnection, BackendChat, BackendPeer } from '@/types';
+import { Conversation, PeerConnection, ChatWithStatus, Peer } from '@/types';
 import { pearsService } from '@/services/pearsService';
 
 export const useConversations = () => {
@@ -9,15 +9,12 @@ export const useConversations = () => {
   const loadConversations = useCallback(async () => {
     try {
       const response = await pearsService.getActiveChats();
-      const backendChats = response.chats || [];
+      const chats = response.chats || [];
 
       const peersResponse = await pearsService.getKnownPeers();
       const knownPeers = peersResponse.peers || [];
 
-      const conversationsFromChats = createConversationsFromChats(
-        backendChats,
-        knownPeers
-      );
+      const conversationsFromChats = createConversationsFromChats(chats, knownPeers);
       setConversations(conversationsFromChats);
     } catch (error) {
       console.error('Failed to load conversations:', error);
@@ -28,28 +25,49 @@ export const useConversations = () => {
   }, []);
 
   const createConversationsFromChats = useCallback(
-    (backendChats: BackendChat[], knownPeers: BackendPeer[]): Conversation[] => {
+    (chats: ChatWithStatus[], knownPeers: Peer[]): Conversation[] => {
       const conversations: Conversation[] = [];
 
-      backendChats.forEach((chat) => {
+      chats.forEach((chat) => {
         const peerId = chat.peerId;
         if (!peerId) return;
 
-        const peerData = knownPeers.find((p) => p.userId === peerId);
+        const peerData = knownPeers.find((p) => p.peerId === peerId);
+        const peerProfile = chat.peerProfile || peerData?.profile;
 
         const peerConnection: PeerConnection = {
           id: peerId,
-          connected: chat.connected || false,
-          name: peerData?.profile?.name,
-          status: chat.connected ? 'connected' : 'disconnected',
+          connected: chat.peerConnected || false,
+          name: peerProfile?.name,
+          status: chat.peerConnected ? 'connected' : 'disconnected',
         };
+
+        const lastMessage = chat.messages[chat.messages.length - 1];
+        const lastActivity =
+          lastMessage?.timestamp || peerData?.lastSeen || Date.now();
 
         conversations.push({
           chatId: chat.id,
           peer: peerConnection,
-          lastMessage: chat.lastMessage,
-          unreadCount: chat.unreadCount || 0,
-          lastActivity: chat.lastActivity || peerData?.lastSeen || Date.now(),
+          lastMessage: lastMessage
+            ? {
+                id: lastMessage.id,
+                fromPeerId: lastMessage.senderId,
+                toPeerId: peerId,
+                originalText: lastMessage.text,
+                translatedText: lastMessage.text,
+                language: 'en',
+                timestamp: lastMessage.timestamp,
+                type: lastMessage.type as any,
+                audioData: (lastMessage as any).audioData,
+                audioDuration: (lastMessage as any).audioDuration,
+                audioSampleRate: (lastMessage as any).audioSampleRate,
+                transcription: lastMessage.transcription,
+                transcriptionLanguage: (lastMessage as any).transcriptionLanguage,
+                translation: (lastMessage as any).translation,
+              }
+            : undefined,
+          lastActivity,
         });
       });
 

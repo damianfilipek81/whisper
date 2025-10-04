@@ -22,7 +22,6 @@ export const useAudioPlayer = (): UseAudioPlayerReturn => {
   const animationFrameRef = useRef<number | null>(null);
 
   useEffect(() => {
-    // Initialize audio context
     if (!audioContextRef.current) {
       audioContextRef.current = new AudioContext({ sampleRate: 16000 });
     }
@@ -60,43 +59,35 @@ export const useAudioPlayer = (): UseAudioPlayerReturn => {
           audioContextRef.current = new AudioContext({ sampleRate });
         }
 
-        // Stop any currently playing audio
         stop();
 
-        // Convert number array to Float32Array
         const float32Data = new Float32Array(audioData);
         const audioDuration = float32Data.length / sampleRate;
         setDuration(audioDuration);
 
-        // Create audio buffer
         const audioBuffer = audioContextRef.current.createBuffer(
-          1, // mono
+          1,
           float32Data.length,
           sampleRate
         );
 
-        // Copy audio data to buffer
         const channelData = audioBuffer.getChannelData(0);
         for (let i = 0; i < float32Data.length; i++) {
           channelData[i] = float32Data[i];
         }
 
-        // Create and configure source node
         const source = await audioContextRef.current.createBufferSource();
         source.buffer = audioBuffer;
         source.connect(audioContextRef.current.destination);
 
-        // Start playback
         startTimeRef.current = audioContextRef.current.currentTime;
         source.start();
         sourceNodeRef.current = source;
         setIsPlaying(true);
         setCurrentTime(0);
 
-        // Start time update loop
         updateCurrentTime();
 
-        // Handle playback end with timeout
         setTimeout(() => {
           console.log('🔊 Audio playback ended');
           setIsPlaying(false);
@@ -133,9 +124,7 @@ export const useAudioPlayer = (): UseAudioPlayerReturn => {
     if (sourceNodeRef.current) {
       try {
         sourceNodeRef.current.stop();
-      } catch (e) {
-        // Already stopped
-      }
+      } catch (e) {}
       sourceNodeRef.current = null;
     }
 

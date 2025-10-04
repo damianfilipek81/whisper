@@ -30,18 +30,3 @@ export const RPC_PEER_DISCONNECTED = 101;
 export const RPC_MESSAGE_RECEIVED = 102;
 export const RPC_PEER_CONNECTING = 103;
 export const RPC_ERROR = 104;
-
-// ============================================================================
-// CONFIGURATION
-// ============================================================================
-
-export const INVITE_EXPIRATION_MS = 5 * 60 * 1000; // 5 minutes
-export const MESSAGE_BATCH_SIZE = 50;
-export const APP_PROTOCOL = 'whisper/app/2.0.0';
-
-// ============================================================================
-// MESSAGE TYPES
-// ============================================================================
-
-export const MESSAGE_TYPE_TEXT = 'text';
-export const MESSAGE_TYPE_VOICE = 'voice';
