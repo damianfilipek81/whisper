@@ -3,7 +3,7 @@ import { View, ActivityIndicator } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 import { Typography } from '@/components/ui/Typography';
 
-export const ChatLoadingState: React.FC = () => {
+const ChatLoadingStateComponent: React.FC = () => {
   return (
     <View style={styles.container}>
       <ActivityIndicator size="large" color="#007AFF" />
@@ -13,6 +13,8 @@ export const ChatLoadingState: React.FC = () => {
     </View>
   );
 };
+
+export const ChatLoadingState = React.memo(ChatLoadingStateComponent);
 
 const styles = StyleSheet.create((theme) => ({
   container: {

@@ -47,12 +47,10 @@ export class PearsService {
 
   async initialize(): Promise<void> {
     if (this.isInitialized) {
-      console.log('✅ Already initialized, skipping...');
       return;
     }
 
     if (this.isInitializing) {
-      console.log('⏳ Already initializing, waiting...');
       while (this.isInitializing) {
         await new Promise((resolve) => setTimeout(resolve, 100));
       }
@@ -63,15 +61,12 @@ export class PearsService {
     this.isInitializing = true;
 
     try {
-      console.log('🚀 Starting pearsService initialization...');
-
       if (this.worklet) {
-        console.log('🧹 Cleaning up old worklet before starting new one...');
         try {
           this.worklet.terminate();
           await new Promise((resolve) => setTimeout(resolve, 150));
         } catch (error) {
-          console.warn('⚠️ Error terminating old worklet:', error);
+          console.warn('Error terminating old worklet:', error);
         }
         this.worklet = null;
       }
@@ -94,15 +89,11 @@ export class PearsService {
       if (initResponse.success) {
         this.currentUserId = initResponse.userId;
         this.isInitialized = true;
-        console.log(
-          '✅ pearsService initialized successfully with backend userId:',
-          this.currentUserId
-        );
       } else {
         throw new Error('Backend initialization failed');
       }
     } catch (error) {
-      console.error('❌ pearsService initialization failed:', error);
+      console.error('pearsService initialization failed:', error);
       this.isInitialized = false;
       throw error;
     } finally {
@@ -115,7 +106,6 @@ export class PearsService {
 
     const req = this.rpc.request(command);
     const payload = data ? JSON.stringify(data) : '{}';
-    console.log('🔍 Sending RPC command:', command, 'with payload:', payload);
     req.send(b4a.from(payload, 'utf8') as any);
 
     const response = await req.reply();
@@ -155,16 +145,12 @@ export class PearsService {
   async connectToPeer(
     peerId: string
   ): Promise<{ success: boolean; chatId?: string; error?: string }> {
-    console.log(`🔌 Attempting to connect to peer: ${peerId}`);
-
     try {
       const response = await this.startChatWithUser(peerId);
-      console.log(`✅ Chat created with peer ${peerId}, chat ID: ${response.chatId}`);
-
       return { success: true, chatId: response.chatId };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.warn(`⚠️ Failed to connect to peer ${peerId}:`, errorMessage);
+      console.warn(`Failed to connect to peer ${peerId}:`, errorMessage);
       return { success: false, error: errorMessage };
     }
   }
@@ -172,52 +158,28 @@ export class PearsService {
   private handleBackendEvent(req: any): void {
     try {
       const eventType = req.command;
-      console.log(
-        '🔍 Backend event received:',
-        eventType,
-        'Raw data type:',
-        typeof req.data
-      );
-
       const eventData = req.data ? parseRPCData(req.data) : {};
-      console.log('🔍 Parsed event data:', eventData);
 
       switch (eventType) {
         case RPC_PEER_CONNECTED:
-          console.log(
-            '🎉 [RPC_PEER_CONNECTED] Peer connected with guaranteed profile data'
-          );
-          console.log('🆔 Peer ID:', eventData.data.peerId);
-          console.log('👤 Profile:', eventData.data.profile);
-
           this.onPeerConnected?.(eventData.data.peerId);
           break;
 
         case RPC_PEER_DISCONNECTED:
-          console.log(
-            '💔 [STEP 5] RPC_PEER_DISCONNECTED event - triggering onPeerDisconnected callback'
-          );
-          console.log('🆔 Peer ID:', eventData.data.peerId);
-
           this.onPeerDisconnected?.(eventData.data.peerId, eventData.data.error);
           break;
 
         case RPC_MESSAGE_RECEIVED:
-          console.log(
-            '📨 [STEP 5] RPC_MESSAGE_RECEIVED event - triggering onMessageReceived callback'
-          );
-          console.log('💬 Chat ID:', eventData.data.chatId);
           this.onMessageReceived?.(eventData.data.message, eventData.data.chatId);
           break;
 
         case RPC_ERROR:
-          console.log('❌ [STEP 5] RPC_ERROR event - triggering onError callback');
-          console.log('🚨 Error:', eventData.data.error);
+          console.error('Backend error:', eventData.data.error);
           this.onError?.(eventData.data.error);
           break;
 
         default:
-          console.warn('❓ [STEP 5] Unknown backend event:', eventType);
+          console.warn('Unknown backend event:', eventType);
       }
     } catch (error) {
       console.error('Failed to handle backend event:', error);
@@ -265,21 +227,7 @@ export class PearsService {
   async connectByShareCode(
     shareCode: string
   ): Promise<{ success: boolean; chatId: string; connectedTo: string }> {
-    console.log('🚀 [STEP 3C] pearsService.connectByShareCode() called');
-    console.log('📤 Sending RPC_CONNECT_BY_SHARE_CODE to backend...');
-    console.log('📋 Share code length:', shareCode.length);
-    const response = await this.sendRPCCommand(RPC_CONNECT_BY_SHARE_CODE, {
-      shareCode,
-    });
-    console.log(
-      '📥 [STEP 4] Backend connectByShareCode response:',
-      response.success ? '✅ Success' : '❌ Failed'
-    );
-    if (response.success) {
-      console.log('🎯 [STEP 4] Connected to peer:', response.connectedTo);
-      console.log('💬 [STEP 4] Chat ID:', response.chatId);
-    }
-    return response;
+    return await this.sendRPCCommand(RPC_CONNECT_BY_SHARE_CODE, { shareCode });
   }
 
   async getActiveChats(): Promise<{ chats: any[] }> {
@@ -291,14 +239,7 @@ export class PearsService {
   }
 
   async generatePublicInvite(): Promise<{ success: boolean; shareCode: string }> {
-    console.log('🔧 [STEP 1B] pearsService.generatePublicInvite() called');
-    console.log('📤 Sending RPC_GENERATE_PUBLIC_INVITE to backend...');
-    const response = await this.sendRPCCommand(RPC_GENERATE_PUBLIC_INVITE);
-    console.log(
-      '📥 [STEP 1C] Backend response received:',
-      response.success ? '✅ Success' : '❌ Failed'
-    );
-    return response;
+    return await this.sendRPCCommand(RPC_GENERATE_PUBLIC_INVITE);
   }
 
   async resetAllData(): Promise<{
@@ -306,28 +247,22 @@ export class PearsService {
     message?: string;
     error?: string;
   }> {
-    console.log('🗑️ [RESET] Starting complete data reset...');
-
     try {
       if (!this.rpc) {
         throw new Error('RPC not initialized');
       }
 
-      // 1. Reset all backend data (chats, peers, hypercores)
-      console.log('🗑️ [RESET] Resetting backend data...');
       const backendResult = await this.sendRPCCommand(RPC_RESET_ALL_DATA);
 
       if (!backendResult.success) {
         throw new Error(`Backend reset failed: ${backendResult.error}`);
       }
 
-      console.log('🗑️ [RESET] Destroying service instance...');
       await this.destroy();
 
-      console.log('✅ [RESET] Complete data reset successful');
       return { success: true, message: 'All data reset successfully' };
     } catch (error) {
-      console.error('❌ [RESET] Failed to reset data:', error);
+      console.error('Failed to reset data:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : String(error),
@@ -336,20 +271,18 @@ export class PearsService {
   }
 
   async destroy(): Promise<void> {
-    console.log('🛑 Destroying pearsService...');
-
     if (this.worklet) {
       try {
         await this.sendRPCCommand(RPC_DESTROY);
       } catch (error) {
-        console.warn('⚠️ Error during RPC destroy:', error);
+        console.warn('Error during RPC destroy:', error);
       }
 
       try {
         this.worklet.terminate();
         await new Promise((resolve) => setTimeout(resolve, 150));
       } catch (error) {
-        console.warn('⚠️ Error terminating worklet:', error);
+        console.warn('Error terminating worklet:', error);
       }
 
       this.worklet = null;
@@ -359,8 +292,6 @@ export class PearsService {
     this.isInitialized = false;
     this.isInitializing = false;
     this.currentUserId = null;
-
-    console.log('✅ pearsService destroyed');
   }
 }
 

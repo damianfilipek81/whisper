@@ -8,7 +8,7 @@ interface ChatEmptyStateProps {
   peerName?: string;
 }
 
-export const ChatEmptyState: React.FC<ChatEmptyStateProps> = ({ peerName }) => {
+const ChatEmptyStateComponent: React.FC<ChatEmptyStateProps> = ({ peerName }) => {
   return (
     <View style={styles.container}>
       <Ionicons name="chatbubbles-outline" size={64} color="#9E9E9E" style={styles.icon} />
@@ -21,6 +21,8 @@ export const ChatEmptyState: React.FC<ChatEmptyStateProps> = ({ peerName }) => {
     </View>
   );
 };
+
+export const ChatEmptyState = React.memo(ChatEmptyStateComponent);
 
 const styles = StyleSheet.create((theme) => ({
   container: {

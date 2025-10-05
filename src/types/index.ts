@@ -62,5 +62,3 @@ export type {
   MessageType,
   MessageStatus,
 } from '../../shared/types';
-
-export * from './qr.types';

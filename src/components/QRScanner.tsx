@@ -1,16 +1,10 @@
-import React from 'react';
-import { View, Modal, Alert } from 'react-native';
+import React, { useRef, useEffect } from 'react';
+import { View, Modal } from 'react-native';
 import { CameraView, BarcodeScanningResult } from 'expo-camera';
 import { StyleSheet } from 'react-native-unistyles';
 import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { Typography } from '@/components/ui/Typography';
 import { Button } from '@/components/ui/Button';
-import {
-  isWhisperQRData,
-  isValidHexKey,
-  getConnectionKey,
-  type WhisperQRData,
-} from '@/types/qr.types';
 
 interface QRScannerProps {
   visible: boolean;
@@ -19,31 +13,23 @@ interface QRScannerProps {
 }
 
 export const QRScanner: React.FC<QRScannerProps> = ({ visible, onClose, onScan }) => {
-  const handleQRScan = (result: BarcodeScanningResult) => {
-    const data = result.data.trim();
+  const hasScanned = useRef(false);
 
-    try {
-      const parsedData = JSON.parse(data);
-
-      if (isWhisperQRData(parsedData)) {
-        const connectionKey = getConnectionKey(parsedData);
-        onScan(connectionKey);
-        return;
-      }
-    } catch (error) {
-      // If JSON parsing fails, continue to check if it's a raw hex key
+  useEffect(() => {
+    if (visible) {
+      hasScanned.current = false;
     }
+  }, [visible]);
 
-    if (isValidHexKey(data)) {
-      onScan(data);
+  const handleQRScan = (result: BarcodeScanningResult) => {
+    if (hasScanned.current) {
       return;
     }
 
-    Alert.alert(
-      'Invalid QR Code',
-      'This QR code does not contain a valid Whisper peer key.',
-      [{ text: 'OK' }]
-    );
+    hasScanned.current = true;
+    const data = result.data.trim();
+
+    onScan(data);
   };
 
   return (
@@ -127,11 +113,11 @@ const styles = StyleSheet.create((theme, rt) => ({
     paddingHorizontal: theme.spacing.lg,
     paddingBottom: theme.spacing.lg,
     alignItems: 'center',
-    paddingTop: rt.insets.top,
+    paddingTop: rt.insets.top + theme.spacing.md,
   },
   scannerCloseButton: {
     position: 'absolute',
-    top: theme.spacing.xl,
+    top: rt.insets.top + theme.spacing.md,
     right: theme.spacing.lg,
     paddingHorizontal: 0,
   },
@@ -147,7 +133,8 @@ const styles = StyleSheet.create((theme, rt) => ({
   scannerBottomContent: {
     backgroundColor: 'rgba(0,0,0,0.7)',
     paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.lg,
+    paddingTop: theme.spacing.lg,
+    paddingBottom: rt.insets.bottom + theme.spacing.lg,
     alignItems: 'center',
   },
   scannerInstructions: {

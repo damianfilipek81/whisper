@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 import Animated, {
@@ -29,7 +29,7 @@ interface VoiceMessageBubbleProps {
   isProcessing?: boolean;
 }
 
-export const VoiceMessageBubble: React.FC<VoiceMessageBubbleProps> = ({
+const VoiceMessageBubbleComponent: React.FC<VoiceMessageBubbleProps> = ({
   audioData,
   duration = 0,
   transcription,
@@ -41,30 +41,28 @@ export const VoiceMessageBubble: React.FC<VoiceMessageBubbleProps> = ({
   userOnline = false,
   isProcessing = false,
 }) => {
-  // Use FlashList's useLayoutState for proper height management
-  const [showTranscription, setShowTranscription] = useLayoutState(false);
-  const [showTranslation, setShowTranslation] = useLayoutState(false);
+  const [showText, setShowText] = useLayoutState(false);
+  const [activeTab, setActiveTab] = useLayoutState<'transcription' | 'translation'>(
+    'transcription'
+  );
 
   const audioPlayer = useAudioPlayer();
 
-  // Animated values for smooth transitions (opacity only)
-  const transcriptionOpacity = useSharedValue(0);
-  const translationOpacity = useSharedValue(0);
+  const textOpacity = useSharedValue(0);
 
-  const toggleTranscription = () => {
-    const newValue = !showTranscription;
-    setShowTranscription(newValue);
+  const toggleText = () => {
+    const newValue = !showText;
+    setShowText(newValue);
 
-    // Animate opacity for smooth transition
-    transcriptionOpacity.value = withTiming(newValue ? 1 : 0, { duration: 300 });
+    textOpacity.value = withTiming(newValue ? 1 : 0, { duration: 300 });
   };
 
-  const toggleTranslation = () => {
-    const newValue = !showTranslation;
-    setShowTranslation(newValue);
-
-    // Animate opacity for smooth transition
-    translationOpacity.value = withTiming(newValue ? 1 : 0, { duration: 300 });
+  const switchTab = (tab: 'transcription' | 'translation') => {
+    if (!showText) {
+      setShowText(true);
+      textOpacity.value = withTiming(1, { duration: 300 });
+    }
+    setActiveTab(tab);
   };
 
   const handlePlayPause = async () => {
@@ -82,26 +80,16 @@ export const VoiceMessageBubble: React.FC<VoiceMessageBubbleProps> = ({
     }
   };
 
-  // Animated styles for opacity only
-  const transcriptionAnimatedStyle = useAnimatedStyle(() => {
+  const textAnimatedStyle = useAnimatedStyle(() => {
     return {
-      opacity: transcriptionOpacity.value,
+      opacity: textOpacity.value,
     };
   });
 
-  const translationAnimatedStyle = useAnimatedStyle(() => {
-    return {
-      opacity: translationOpacity.value,
-    };
-  });
-
-  // Initialize opacity values based on initial state
   useEffect(() => {
-    transcriptionOpacity.value = showTranscription ? 1 : 0;
-    translationOpacity.value = showTranslation ? 1 : 0;
+    textOpacity.value = showText ? 1 : 0;
   }, []);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       audioPlayer.stop();
@@ -162,88 +150,87 @@ export const VoiceMessageBubble: React.FC<VoiceMessageBubbleProps> = ({
           </View>
         </View>
 
-        {transcription && (
+        {(transcription || translation) && (
           <View style={styles.textSection}>
-            <Button
-              variant="ghost"
-              size="small"
-              onPress={toggleTranscription}
-              style={styles.sectionToggle}
-            >
-              <View style={styles.sectionHeader}>
-                <Typography
-                  variant="caption"
-                  weight="medium"
-                  color={isCurrentUser ? 'inverse' : 'muted'}
-                  iconLeft={
+            <View style={styles.tabContainer}>
+              {transcription && (
+                <Button
+                  variant="ghost"
+                  size="small"
+                  onPress={() => switchTab('transcription')}
+                  style={[
+                    styles.tabButton,
+                    activeTab === 'transcription' && styles.tabButtonActive,
+                  ]}
+                >
+                  <View style={styles.sectionLabelContainer}>
+                    <Ionicons
+                      name="document-text"
+                      size={14}
+                      color={isCurrentUser ? '#FFFFFF' : '#666666'}
+                    />
+                    <Typography
+                      variant="caption"
+                      weight={activeTab === 'transcription' ? 'semibold' : 'medium'}
+                      color={isCurrentUser ? 'inverse' : 'muted'}
+                      style={styles.sectionLabel}
+                    >
+                      {transcriptionLanguage?.toUpperCase() || 'Transcription'}
+                    </Typography>
+                  </View>
+                </Button>
+              )}
+
+              {translation && (
+                <Button
+                  variant="ghost"
+                  size="small"
+                  onPress={() => switchTab('translation')}
+                  style={[
+                    styles.tabButton,
+                    activeTab === 'translation' && styles.tabButtonActive,
+                  ]}
+                >
+                  <View style={styles.sectionLabelContainer}>
                     <Ionicons
                       name="document-text-outline"
                       size={14}
                       color={isCurrentUser ? '#FFFFFF' : '#666666'}
                     />
-                  }
-                >
-                  {transcriptionLanguage?.toUpperCase() || 'Transcription'}
-                </Typography>
-                <Ionicons
-                  name={showTranscription ? 'chevron-up' : 'chevron-down'}
-                  size={16}
-                  color={isCurrentUser ? '#FFFFFF' : '#666666'}
-                />
-              </View>
-            </Button>
-            {showTranscription && (
-              <Animated.View style={transcriptionAnimatedStyle}>
-                <Typography
-                  variant="body"
-                  color={isCurrentUser ? 'inverse' : 'primary'}
-                  style={styles.textContent}
-                >
-                  {transcription}
-                </Typography>
-              </Animated.View>
-            )}
-          </View>
-        )}
+                    <Typography
+                      variant="caption"
+                      weight={activeTab === 'translation' ? 'semibold' : 'medium'}
+                      color={isCurrentUser ? 'inverse' : 'muted'}
+                      style={styles.sectionLabel}
+                    >
+                      EN
+                    </Typography>
+                  </View>
+                </Button>
+              )}
 
-        {translation && (
-          <View style={styles.textSection}>
-            <Button
-              variant="ghost"
-              size="small"
-              onPress={toggleTranslation}
-              style={styles.sectionToggle}
-            >
-              <View style={styles.sectionHeader}>
-                <Typography
-                  variant="caption"
-                  weight="medium"
-                  color={isCurrentUser ? 'inverse' : 'muted'}
-                  iconLeft={
-                    <Ionicons
-                      name="language-outline"
-                      size={14}
-                      color={isCurrentUser ? '#FFFFFF' : '#666666'}
-                    />
-                  }
-                >
-                  EN
-                </Typography>
+              <Button
+                variant="ghost"
+                size="small"
+                onPress={toggleText}
+                style={styles.chevronButton}
+              >
                 <Ionicons
-                  name={showTranslation ? 'chevron-up' : 'chevron-down'}
+                  name={showText ? 'chevron-up' : 'chevron-down'}
                   size={16}
                   color={isCurrentUser ? '#FFFFFF' : '#666666'}
                 />
-              </View>
-            </Button>
-            {showTranslation && (
-              <Animated.View style={translationAnimatedStyle}>
+              </Button>
+            </View>
+
+            {showText && (
+              <Animated.View style={textAnimatedStyle}>
                 <Typography
                   variant="body"
                   color={isCurrentUser ? 'inverse' : 'primary'}
                   style={styles.textContent}
                 >
-                  {translation}
+                  {activeTab === 'transcription' ? transcription : translation}
                 </Typography>
               </Animated.View>
             )}
@@ -298,19 +285,39 @@ const styles = StyleSheet.create((theme) => ({
     borderTopWidth: 0.5,
     borderTopColor: 'rgba(0, 0, 0, 0.1)',
   },
-  sectionToggle: {
+  tabContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
+  },
+  tabButton: {
     padding: 0,
     paddingVertical: theme.spacing.xs,
+    paddingHorizontal: theme.spacing.sm,
+    minHeight: 0,
+    flex: 1,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  tabButtonActive: {
+    borderBottomColor: 'rgba(255, 255, 255, 0.5)',
+  },
+  chevronButton: {
+    padding: 0,
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
     minHeight: 0,
   },
-  sectionHeader: {
+  sectionLabelContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    width: '100%',
+    gap: 4,
+  },
+  sectionLabel: {
+    marginTop: 1,
   },
   textContent: {
-    marginTop: theme.spacing.xs,
+    marginTop: theme.spacing.md,
     lineHeight: 20,
   },
   processingContainer: {
@@ -326,3 +333,5 @@ const styles = StyleSheet.create((theme) => ({
     flex: 1,
   },
 }));
+
+export const VoiceMessageBubble = React.memo(VoiceMessageBubbleComponent);

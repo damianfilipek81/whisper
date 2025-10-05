@@ -1,9 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useWhisperModel } from '@/hooks/useWhisperModel';
-import {
-  ChatVoiceSettingsStorage,
-  WhisperModelType,
-} from '@/services/storageService';
+import { ChatVoiceSettingsStorage } from '@/services/storageService';
 import { VoiceMessage } from '@/types';
 import { SpeechToTextLanguage } from 'react-native-executorch';
 

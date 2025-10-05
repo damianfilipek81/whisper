@@ -40,7 +40,7 @@ export const useAudioRecording = ({
   const analyserRef = useRef<AnalyserNode | null>(null);
   const audioRecorderRef = useRef<AudioRecorder | null>(null);
   const adapterNodeRef = useRef<RecorderAdapterNode | null>(null);
-  const audioUpdateIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const audioUpdateIntervalRef = useRef<NodeJS.Timeout | number | null>(null);
   const audioChunksRef = useRef<Float32Array[]>([]);
 
   const { permissionStatus, requestPermissions, isPermissionGranted } =
@@ -161,7 +161,6 @@ export const useAudioRecording = ({
       await new Promise((resolve) => setTimeout(resolve, 200));
 
       const chunks = audioChunksRef.current;
-      console.log('📊 Audio chunks collected:', chunks.length);
 
       if (chunks.length === 0) {
         console.log('⚠️ No audio chunks recorded');
@@ -169,7 +168,6 @@ export const useAudioRecording = ({
       }
 
       const totalLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
-      console.log('📊 Total audio length:', totalLength, 'samples');
 
       const waveform = new Float32Array(totalLength);
       let offset = 0;

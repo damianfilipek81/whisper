@@ -12,7 +12,7 @@ interface ChatHeaderProps {
   onMorePress?: () => void;
 }
 
-export const ChatHeader: React.FC<ChatHeaderProps> = ({
+const ChatHeaderComponent: React.FC<ChatHeaderProps> = ({
   otherUser,
   onBackPress,
   onMorePress,
@@ -53,6 +53,8 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
     </View>
   );
 };
+
+export const ChatHeader = React.memo(ChatHeaderComponent);
 
 const styles = StyleSheet.create((theme) => ({
   container: {

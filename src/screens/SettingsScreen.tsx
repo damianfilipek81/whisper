@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, ScrollView, TouchableOpacity, Alert, Switch } from 'react-native';
+import { View, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -14,13 +14,11 @@ type NavigationProp = StackNavigationProp<RootStackParamList, 'Settings'>;
 interface UserData {
   id: string;
   name: string;
-  createdAt: number;
 }
 
 export const SettingsScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const [userData, setUserData] = useState<UserData | null>(null);
-
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -30,28 +28,14 @@ export const SettingsScreen: React.FC = () => {
   const loadData = async () => {
     try {
       if (pearsService.initialized) {
-        // Get user profile from backend
         const userProfile = await pearsService.getUserProfile();
         setUserData(userProfile.profile);
 
-        // Get active chats count
-        const response = await pearsService.getActiveChats();
-
-        // Get current user ID (backend is source of truth)
         const userId = pearsService.getCurrentUserId();
         setCurrentUserId(userId);
-
-        console.log('✅ [SETTINGS] Loaded user data from backend:', {
-          userId: userId?.slice(0, 8) + '...',
-          name: userProfile.profile?.name,
-          activeChats: response.chats?.length || 0,
-        });
       } else {
-        // Initialize pearsService if needed
-        console.log('🔄 [SETTINGS] Initializing pearsService...');
         await pearsService.initialize();
 
-        // Retry data loading
         const userProfile = await pearsService.getUserProfile();
         const userId = pearsService.getCurrentUserId();
 
@@ -59,7 +43,6 @@ export const SettingsScreen: React.FC = () => {
         setCurrentUserId(userId);
       }
     } catch (error) {
-      console.error('❌ [SETTINGS] Failed to load backend data:', error);
       setUserData(null);
       setCurrentUserId(null);
     }
@@ -67,20 +50,16 @@ export const SettingsScreen: React.FC = () => {
 
   const handleClearAllData = () => {
     Alert.alert(
-      'Clear All Data',
-      'This will remove all your local data including user profile and settings. P2P chat data is handled by the network layer. You will need to set up the app again. Are you sure?',
+      'Reset All Data',
+      'This will remove all data including user profile, chats, and connections. You will need to restart the app. Are you sure?',
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Clear All',
+          text: 'Reset',
           style: 'destructive',
           onPress: async () => {
             try {
-              console.log('🗑️ [SETTINGS] Starting complete data reset...');
-
-              // 1. Reset ALL backend data (P2P chats, hypercores, connections)
               if (pearsService.initialized) {
-                console.log('🗑️ [SETTINGS] Resetting P2P backend data...');
                 const resetResult = await pearsService.resetAllData();
                 if (!resetResult.success) {
                   throw new Error(`Backend reset failed: ${resetResult.error}`);
@@ -89,21 +68,18 @@ export const SettingsScreen: React.FC = () => {
 
               UserProfileStorage.clearUserProfile();
 
-              // 3. Reset UI state
               setUserData(null);
               setCurrentUserId(null);
 
-              console.log('✅ [SETTINGS] Complete data reset successful');
               Alert.alert(
                 'Reset Complete',
-                'All data has been cleared including user identity, chats, and connections. Please RESTART the app to create a new user identity.',
-                [{ text: 'OK', style: 'default' }]
+                'All data has been cleared. Please restart the app.',
+                [{ text: 'OK' }]
               );
             } catch (error) {
-              console.error('❌ [SETTINGS] Error during complete reset:', error);
               Alert.alert(
                 'Error',
-                `Failed to reset all data: ${
+                `Failed to reset data: ${
                   error instanceof Error ? error.message : String(error)
                 }`
               );
@@ -130,7 +106,6 @@ export const SettingsScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <Button
           variant="ghost"
@@ -143,60 +118,34 @@ export const SettingsScreen: React.FC = () => {
         <View style={styles.placeholder} />
       </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* User Info Section */}
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.section}>
           <Typography variant="heading3" style={styles.sectionTitle}>
-            User Profile
+            Profile
           </Typography>
 
-          {renderInfoItem('User Name', userData?.name || 'Unknown')}
+          {renderInfoItem('Username', userData?.name || 'Unknown')}
           {renderInfoItem(
-            'User ID (Local)',
-            userData?.id?.slice(0, 8) + '...' || 'N/A'
-          )}
-          {renderInfoItem(
-            'User ID (P2P)',
-            currentUserId ? currentUserId.slice(0, 8) + '...' : 'N/A'
-          )}
-          {renderInfoItem(
-            'P2P Public Key',
+            'User ID',
             currentUserId ? currentUserId.slice(0, 16) + '...' : 'N/A',
             currentUserId
               ? () => {
-                  Alert.alert('P2P Public Key', currentUserId, [
-                    {
-                      text: 'Copy',
-                      onPress: () => {
-                        /* Clipboard.setString(currentUserId) */
-                      },
-                    },
+                  Alert.alert('User ID (Public Key)', currentUserId, [
                     { text: 'Close' },
                   ]);
                 }
               : undefined
           )}
-          {renderInfoItem(
-            'Created',
-            userData?.createdAt
-              ? new Date(userData.createdAt).toLocaleDateString()
-              : 'N/A'
-          )}
         </View>
 
-        {/* Actions Section */}
         <View style={styles.section}>
-          <Typography variant="heading3" style={styles.sectionTitle}>
-            Data Management
-          </Typography>
-
-          <Button
-            variant="ghost"
-            onPress={handleClearAllData}
-            style={[styles.actionButton, styles.dangerButton]}
-          >
-            <Typography variant="button" style={styles.dangerText}>
-              ⚠️ Reset All Data
+          <Button variant="danger" onPress={handleClearAllData}>
+            <Typography variant="button" color="inverse">
+              Reset All Data
             </Typography>
           </Button>
         </View>
@@ -205,7 +154,7 @@ export const SettingsScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create((theme, rt) => ({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
@@ -215,7 +164,7 @@ const styles = StyleSheet.create((theme) => ({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: theme.spacing.lg,
-    paddingTop: theme.spacing.xl,
+    paddingTop: rt.insets.top + theme.spacing.md,
     paddingBottom: theme.spacing.md,
   },
   backButton: {
@@ -227,6 +176,9 @@ const styles = StyleSheet.create((theme) => ({
   scrollView: {
     flex: 1,
   },
+  scrollContent: {
+    paddingBottom: rt.insets.bottom + theme.spacing.lg,
+  },
   section: {
     marginHorizontal: theme.spacing.lg,
     marginBottom: theme.spacing.lg,
@@ -236,23 +188,6 @@ const styles = StyleSheet.create((theme) => ({
   },
   sectionTitle: {
     marginBottom: theme.spacing.md,
-  },
-  settingItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: theme.spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.otherMessage,
-    marginBottom: theme.spacing.sm,
-  },
-  settingText: {
-    flex: 1,
-    marginRight: theme.spacing.md,
-  },
-  settingSubtitle: {
-    color: theme.colors.textSecondary,
-    marginTop: 2,
   },
   infoItem: {
     paddingVertical: theme.spacing.sm,
@@ -269,26 +204,5 @@ const styles = StyleSheet.create((theme) => ({
   },
   infoValueClickable: {
     color: theme.colors.primary,
-  },
-  actionButton: {
-    justifyContent: 'flex-start',
-    paddingHorizontal: 0,
-    paddingVertical: theme.spacing.md,
-    marginBottom: theme.spacing.xs,
-  },
-  warningButton: {
-    backgroundColor: 'rgba(255, 152, 0, 0.1)',
-  },
-  warningText: {
-    color: '#FF9800',
-  },
-  dangerButton: {
-    backgroundColor: 'rgba(244, 67, 54, 0.1)',
-  },
-  dangerText: {
-    color: '#F44336',
-  },
-  bottomPadding: {
-    height: theme.spacing.xl,
   },
 }));

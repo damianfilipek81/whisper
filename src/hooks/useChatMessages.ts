@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { PeerMessage } from '@/types';
 import { pearsService } from '@/services/pearsService';
+import { transformBackendMessageToPeerMessage, BackendMessage } from '@/utils/messageUtils';
 
 interface UseChatMessagesProps {
   chatId: string;
@@ -34,42 +35,11 @@ export const useChatMessages = ({
       try {
         setIsLoading(true);
         const response = await pearsService.getChatMessages(chatId, 50);
-        const backendMessages = response.messages || [];
+        const backendMessages = (response.messages || []) as BackendMessage[];
 
-        const peerMessages: PeerMessage[] = backendMessages.map((msg) => {
-          if (msg.type === 'voice') {
-            console.log('📥 Loading voice message from backend:', {
-              id: msg.id,
-              duration: msg.audioDuration,
-              audioDataLength: msg.audioData?.length,
-              hasTranscription: !!msg.transcription,
-              hasTranslation: !!msg.translation,
-              hasMetadata: !!msg.metadata,
-              metadataKeys: msg.metadata ? Object.keys(msg.metadata) : [],
-              transcriptionValue: msg.transcription || msg.metadata?.transcription,
-              translationValue: msg.translation || msg.metadata?.translation,
-            });
-          }
-
-          return {
-            id: msg.id,
-            fromPeerId: msg.senderId,
-            toPeerId: msg.senderId === currentUserId ? peerId : currentUserId,
-            originalText: msg.text,
-            translatedText: msg.text,
-            language: 'en',
-            timestamp: msg.timestamp,
-            type: msg.type as 'text' | 'audio' | 'transcription' | 'voice',
-            // Voice message specific fields
-            audioData: msg.audioData || msg.metadata?.audioData,
-            audioDuration: msg.audioDuration || msg.metadata?.audioDuration,
-            audioSampleRate: msg.audioSampleRate || msg.metadata?.audioSampleRate,
-            transcription: msg.transcription || msg.metadata?.transcription,
-            transcriptionLanguage:
-              msg.transcriptionLanguage || msg.metadata?.transcriptionLanguage,
-            translation: msg.translation || msg.metadata?.translation,
-          };
-        });
+        const peerMessages = backendMessages.map((msg) =>
+          transformBackendMessageToPeerMessage(msg, currentUserId, peerId)
+        );
 
         setMessages(peerMessages);
       } catch (error) {
@@ -82,51 +52,25 @@ export const useChatMessages = ({
     if (isBackendReady && chatId) {
       loadMessages();
     }
-    }, [chatId, currentUserId, peerId, isBackendReady]);
+  }, [chatId, currentUserId, peerId, isBackendReady]);
 
   useEffect(() => {
     const originalHandler = pearsService.onMessageReceived;
 
     pearsService.onMessageReceived = (message, messageChatId) => {
       if (messageChatId === chatId) {
-        console.log('📨 New message received in chat:', chatId);
-        console.log('   Type:', message.type);
-        console.log('   Text:', message.text?.substring(0, 50));
-
-        if (message.type === 'voice') {
-          console.log('🎤 Voice message received:', {
-            duration: message.audioDuration,
-            audioDataLength: message.audioData?.length,
-            hasTranscription: !!message.transcription,
-            hasTranslation: !!message.translation,
-          });
-        }
-
         setMessages((prev) => {
           const exists = prev.some((m) => m.id === message.id);
           if (exists) {
-            console.log('⚠️ Message already exists, skipping');
             return prev;
           }
 
-          const peerMessage: PeerMessage = {
-            id: message.id,
-            fromPeerId: message.senderId,
-            toPeerId: message.senderId === currentUserId ? peerId : currentUserId,
-            originalText: message.text,
-            translatedText: message.text,
-            language: 'en',
-            timestamp: message.timestamp,
-            type: message.type as 'text' | 'audio' | 'transcription' | 'voice',
-            audioData: message.audioData,
-            audioDuration: message.audioDuration,
-            audioSampleRate: message.audioSampleRate,
-            transcription: message.transcription,
-            transcriptionLanguage: message.transcriptionLanguage,
-            translation: message.translation,
-          };
+          const peerMessage = transformBackendMessageToPeerMessage(
+            message as BackendMessage,
+            currentUserId,
+            peerId
+          );
 
-          console.log('✅ Message added to state');
           return [...prev, peerMessage].sort((a, b) => a.timestamp - b.timestamp);
         });
       }
@@ -135,9 +79,6 @@ export const useChatMessages = ({
     };
 
     return () => {
-      console.log(
-        ` useChatMessages: Cleaning up message handler for chat: ${chatId}`
-      );
       pearsService.onMessageReceived = originalHandler;
     };
   }, [chatId, currentUserId, peerId]);
@@ -147,11 +88,7 @@ export const useChatMessages = ({
       try {
         const { type = 'text', metadata = {} } = options || {};
         const response = await pearsService.sendMessage(chatId, text, type, metadata);
-        if (response.success) {
-          console.log(`${type} message sent successfully:`, response.messageId);
-        } else {
-          throw new Error('Failed to send message');
-        }
+        if (!response.success) throw new Error('Failed to send message');
       } catch (error) {
         console.error('Error sending message:', error);
         throw error;

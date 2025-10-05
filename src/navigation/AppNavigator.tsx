@@ -6,7 +6,7 @@ import { UsersListScreen } from '@/screens/UsersListScreen';
 import { AddPeerScreen } from '@/screens/AddPeerScreen';
 import { SettingsScreen } from '@/screens/SettingsScreen';
 import { VoiceSettingsScreen } from '@/screens/VoiceSettingsScreen';
-import { ChatScreen } from '@/components/ChatScreen';
+import { ChatScreen } from '@/screens/ChatScreen';
 import { PeerConnection } from '@/types';
 import { UserProfileStorage } from '@/services/storageService';
 

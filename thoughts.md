@@ -64,12 +64,19 @@ edit 04.10.2025:
   -- some basic cleanup
   -- migrate backend to typescript (was able to find correct CLI that works with bare-pack)
 
-- still todo:
+edit 05.10.2025:
+
+- changed:
+  -- improved UI (addPeersScreen, chatScreen)
+  -- fixed issues regarding translation for voice message
+  -- some small cleanup/refactor
+
+- todo:
   -- better cleanup, refacotr some components/screens to more modulare
   -- check backend for security vulnerabilities (e.g. not encrypted connections or saved data)
-  -- improve UI for addPeers screen and chat screen
   -- improve UI for android
   -- add tests
   -- add expo-local-authentication on app start so only authorized user can open app
   -- add notifications when app in background (we could probably add central server for push notifications even if app is off (??))
   -- check crutial thing (chatScreen) for unnecessary rerenders
+  -- add pagination for chat messages (currently we fetch only last 50)

@@ -3,15 +3,8 @@ import { View, StatusBar, Alert } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import {
-  KeyboardAvoidingView,
-  useKeyboardHandler,
-} from 'react-native-keyboard-controller';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-} from 'react-native-reanimated';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
+
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { PeerMessage } from '@/types';
 import { VoiceTimeline } from '@/components/VoiceTimeline';
@@ -30,6 +23,7 @@ import { useChatConnection } from '@/hooks/useChatConnection';
 import { useChatMessages } from '@/hooks/useChatMessages';
 import { useVoiceMessage } from '@/hooks/useVoiceMessage';
 import { useAudioRecording } from '@/hooks/useAudioRecording';
+import { prepareVoiceMessageForSending } from '@/utils/voiceMessageUtils';
 
 type ChatScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Chat'>;
 
@@ -37,7 +31,6 @@ export const ChatScreen: React.FC = () => {
   const { rt } = useUnistyles();
   const navigation = useNavigation<ChatScreenNavigationProp>();
   const { chatId, peer } = useRoute<RouteProp<RootStackParamList, 'Chat'>>().params;
-  const keyboardHeight = useSharedValue(0);
   const [isRecording, setIsRecording] = useState(false);
 
   const { isInitialized } = useAppInitialization();
@@ -82,25 +75,6 @@ export const ChatScreen: React.FC = () => {
     initialStatus: peer.status,
   });
 
-  useKeyboardHandler({
-    onStart: (e) => {
-      'worklet';
-      keyboardHeight.value = withTiming(e.height, { duration: 100 });
-    },
-    onEnd: () => {
-      'worklet';
-      keyboardHeight.value = withTiming(0, { duration: 100 });
-    },
-  });
-
-  const floatingInputAnimatedStyle = useAnimatedStyle(() => {
-    const isKeyboardVisible = keyboardHeight.value > 0;
-
-    return {
-      paddingBottom: isKeyboardVisible ? rt.insets.bottom / 2 : rt.insets.bottom,
-    };
-  });
-
   const otherUser = useMemo(
     () => ({
       id: peer.id,
@@ -132,23 +106,10 @@ export const ChatScreen: React.FC = () => {
         const voiceMessage = await processVoiceMessage(recordedAudio);
 
         if (voiceMessage) {
-          console.log('🎤 Sending voice message:', {
-            duration: voiceMessage.duration,
-            audioLength: voiceMessage.audioData.length,
-            transcription: voiceMessage.transcription?.substring(0, 50),
-            translation: voiceMessage.translation?.substring(0, 50),
-          });
-
-          await sendMessage(voiceMessage.transcription || '', {
-            type: 'voice',
-            metadata: {
-              audioData: Array.from(voiceMessage.audioData),
-              audioDuration: voiceMessage.duration,
-              audioSampleRate: voiceMessage.sampleRate,
-              transcription: voiceMessage.transcription,
-              transcriptionLanguage: voiceMessage.transcriptionLanguage,
-              translation: voiceMessage.translation,
-            },
+          const payload = prepareVoiceMessageForSending(voiceMessage);
+          await sendMessage(payload.text, {
+            type: payload.type,
+            metadata: payload.metadata,
           });
         } else {
           Alert.alert('Error', 'Failed to process voice message. Please try again.');
@@ -251,9 +212,7 @@ export const ChatScreen: React.FC = () => {
           />
         )}
 
-        <Animated.View
-          style={[styles.floatingInputContainer, floatingInputAnimatedStyle]}
-        >
+        <View style={[styles.floatingInputContainer]}>
           <VoiceTimeline isRecording={isRecording} audioData={audioData} />
 
           <ChatStatusBar
@@ -273,7 +232,7 @@ export const ChatScreen: React.FC = () => {
             isRecording={isRecording}
             isProcessingVoice={isProcessingVoice}
           />
-        </Animated.View>
+        </View>
       </KeyboardAvoidingView>
     </View>
   );

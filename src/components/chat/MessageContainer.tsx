@@ -38,25 +38,24 @@ export const MessageContainer: React.FC<MessageContainerProps> = ({
       )}
 
       <View style={styles.messageContent}>
-        <View style={styles.messageHeader}>
-          {!isCurrentUser && (
-            <Typography variant="caption" color="secondary" style={styles.senderName}>
-              {userName}
-            </Typography>
-          )}
-          <Typography
-            variant="caption"
-            color="muted"
-            style={[
-              styles.timestamp,
-              isCurrentUser ? styles.timestampUser : styles.timestampOther,
-            ]}
-          >
-            {formatTime(timestamp)}
+        {!isCurrentUser && (
+          <Typography variant="caption" color="secondary" style={styles.senderName}>
+            {userName}
           </Typography>
-        </View>
-
+        )}
+        
         {children}
+        
+        <Typography
+          variant="caption"
+          color="muted"
+          style={[
+            styles.timestamp,
+            isCurrentUser ? styles.timestampUser : styles.timestampOther,
+          ]}
+        >
+          {formatTime(timestamp)}
+        </Typography>
       </View>
     </View>
   );
@@ -102,19 +101,16 @@ const styles = StyleSheet.create((theme) => ({
   messageContent: {
     flex: 1,
   },
-  messageHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  senderName: {
+    fontSize: theme.fontSize.xs,
     marginBottom: theme.spacing.xs,
     paddingHorizontal: theme.spacing.xs,
-  },
-  senderName: {
-    flex: 1,
   },
   timestamp: {
     fontSize: theme.fontSize.xs,
     opacity: 0.7,
+    marginTop: theme.spacing.xs,
+    paddingHorizontal: theme.spacing.xs,
   },
   timestampUser: {
     textAlign: 'right',

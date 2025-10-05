@@ -11,16 +11,13 @@ interface ChatStatusBarProps {
   modelError?: string | null;
 }
 
-export const ChatStatusBar: React.FC<ChatStatusBarProps> = ({
+const ChatStatusBarComponent: React.FC<ChatStatusBarProps> = ({
   isConnected,
   isConnecting,
   isDownloadingModel = false,
   modelDownloadProgress = 0,
   modelError,
 }) => {
-  // Priority order: Model downloading > Model error > Connection status
-  // Show only the most important status at a time
-  
   if (isDownloadingModel) {
     return (
       <View style={styles.container}>
@@ -71,9 +68,10 @@ export const ChatStatusBar: React.FC<ChatStatusBarProps> = ({
     );
   }
 
-  // Everything is OK, don't show anything
   return null;
 };
+
+export const ChatStatusBar = React.memo(ChatStatusBarComponent);
 
 const styles = StyleSheet.create((theme) => ({
   container: {
@@ -112,4 +110,3 @@ const styles = StyleSheet.create((theme) => ({
     flex: 1,
   },
 }));
-

@@ -28,11 +28,17 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
       userOnline={userOnline}
       timestamp={timestamp}
     >
-      <MessageBubbleWrapper isCurrentUser={isCurrentUser}>
+      <MessageBubbleWrapper
+        isCurrentUser={isCurrentUser}
+        style={isCurrentUser ? styles.bubbleAlignRight : styles.bubbleAlignLeft}
+      >
         <Typography
           variant="body"
           color={isCurrentUser ? 'inverse' : 'primary'}
-          style={styles.messageText}
+          style={[
+            styles.messageText,
+            isCurrentUser ? styles.textAlignRight : styles.textAlignLeft,
+          ]}
         >
           {text}
         </Typography>
@@ -46,5 +52,17 @@ export const MessageBubble = React.memo(MessageBubbleComponent);
 const styles = StyleSheet.create(() => ({
   messageText: {
     lineHeight: 20,
+  },
+  textAlignRight: {
+    textAlign: 'right',
+  },
+  textAlignLeft: {
+    textAlign: 'left',
+  },
+  bubbleAlignRight: {
+    alignSelf: 'flex-end',
+  },
+  bubbleAlignLeft: {
+    alignSelf: 'flex-start',
   },
 }));

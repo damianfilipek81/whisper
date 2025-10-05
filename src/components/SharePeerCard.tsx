@@ -63,7 +63,7 @@ export const SharePeerCard: React.FC<SharePeerCardProps> = ({
           </Typography>
           <View style={styles.keyRow}>
             <Typography variant="caption" style={styles.keyText}>
-              {discoveryKey.slice(0, 20)}...
+              {discoveryKey}
             </Typography>
             <Button
               variant="ghost"
